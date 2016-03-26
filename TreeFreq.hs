@@ -12,10 +12,6 @@ type Weight = Word
 
 data Direction = GoLeft | GoRight deriving (Eq, Ord, Show, Read, Enum, Bounded)
 
-inv :: Direction -> Direction
-inv GoLeft  = GoRight
-inv GoRight = GoLeft
-
 data Tree' a = Leaf' a
              | Node' !Direction !(Tree a) !(Tree a)
              deriving (Eq, Ord, Show)
@@ -40,17 +36,33 @@ insert w' a' = go where
   go (Node w GoLeft  l r) = Node (w+w') GoRight (go l) r
   go (Node w GoRight l r) = Node (w+w') GoLeft  l      (go r)
 
--- Not self-balancing!… yet
 delete :: Weight -> Tree a -> (Weight, a, Maybe (Tree a))
-delete _ (Leaf w a) =
+delete i t = case uninsert t of
+               (w', a', Just t')   -> case replace w' a' i t' of
+                                        (w'', a'', t'') -> (w'', a'', Just t'')
+               res@(_, _, Nothing) -> res
+
+uninsert :: Tree a -> (Weight, a, Maybe (Tree a))
+uninsert (Leaf w a)           =
   (w, a, Nothing)
-delete i (Node w d l@(Tree wl _) r)
-  | i < wl    = case delete i l of
-                  (w', a, Just l') -> (w', a, Just $ Node (w-w') d l' r)
-                  (w', a, Nothing) -> (w', a, Just r)
-  | otherwise = case delete (i-wl) r of
-                  (w', a, Just r') -> (w', a, Just $ Node (w-w') d l r')
-                  (w', a, Nothing) -> (w', a, Just l)
+uninsert (Node w GoLeft  l r) =
+  case uninsert r of
+    (w', a', Just r') -> (w', a', Just $ Node (w-w') GoRight l r')
+    (w', a', Nothing) -> (w', a', Just l)
+uninsert (Node w GoRight l r) =
+  case uninsert l of
+    (w', a', Just l') -> (w', a', Just $ Node (w-w') GoLeft  l' r)
+    (w', a', Nothing) -> (w', a', Just r)
+
+replace :: Weight -> a -> Weight -> Tree a -> (Weight, a, Tree a)
+replace wNew aNew = go where
+  go _ (Leaf w a) =
+    (w, a, Leaf wNew aNew)
+  go i (Node w d l@(Tree wl _) r)
+    | i < wl    = case go i l of
+                    (w', a', l') -> (w', a', Node (w-w'+wNew) d l' r)
+    | otherwise = case go (i-wl) r of
+                    (w', a', r') -> (w', a', Node (w-w'+wNew) d l r')
 
 fromList :: [(Weight,a)] -> Maybe (Tree a)
 fromList []          = Nothing
