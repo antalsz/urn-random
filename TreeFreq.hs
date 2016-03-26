@@ -2,10 +2,13 @@
              GeneralizedNewtypeDeriving, PatternSynonyms, TypeOperators #-}
 {-# OPTIONS_GHC -funbox-strict-fields -Wall #-}
 
+module TreeFreq where
+
 import Prelude hiding (lookup)
+import Data.Foldable
 import Test.QuickCheck
 
-type Weight = Int
+type Weight = Word
 
 data Direction = GoLeft | GoRight deriving (Eq, Ord, Show, Read, Enum, Bounded)
 
@@ -33,7 +36,7 @@ lookup (Node' _ (Tree wl l) (Tree _ r)) i
 
 insert :: Weight -> a -> Tree a -> Tree a
 insert w' a' = go where
-  go t@(Leaf w _)       = Node (w+w') GoLeft  t      (Leaf w' a')
+  go leaf@(Leaf w _)      = Node (w+w') GoLeft  leaf   (Leaf w' a')
   go (Node w GoLeft  l r) = Node (w+w') GoRight (go l) r
   go (Node w GoRight l r) = Node (w+w') GoLeft  l      (go r)
 
@@ -51,7 +54,7 @@ delete i (Node w d l@(Tree wl _) r)
 
 fromList :: [(Weight,a)] -> Maybe (Tree a)
 fromList []          = Nothing
-fromList ((w,t):wts) = Just $ foldr (uncurry insert) (Leaf w t) wts
+fromList ((w,t):wts) = Just $ foldl' (flip $ uncurry insert) (Leaf w t) wts
 
 frequencyT :: Tree (Gen a) -> Gen a
 frequencyT (Tree w t) = lookup t =<< choose (0, w-1)
