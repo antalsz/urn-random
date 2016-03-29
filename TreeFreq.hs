@@ -50,7 +50,7 @@ insert w' a' (Tree size wt) = Tree (size+1) $ go size wt where
 
 uninsert :: Tree a -> (Weight, a, Maybe (Tree a))
 uninsert (Tree size wt) = case go size wt of
-                            (w', a', mt) -> (w', a', Tree size <$> mt)
+                            (w', a', mt) -> (w', a', Tree size <$> mt) -- should this be (Tree $ size - 1)???
   where
     go _    (WLeaf w a)   = (w, a, Nothing)
     go path (WNode w l r)
