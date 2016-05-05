@@ -4,6 +4,7 @@
 module TreeFreq where
 
 import Prelude hiding (lookup)
+import Data.Bifunctor
 import Data.Foldable
 import Data.Bits
 import Test.QuickCheck
@@ -41,26 +42,34 @@ blookup (BNode (WTree wl l) (WTree _ r)) i
 lookup :: Tree a -> Weight -> a
 lookup = blookup . btree . wtree
 
-insert :: Weight -> a -> Tree a -> Tree a
-insert w' a' (Tree size wt) = Tree (size+1) $ go size wt where
-  go _    leaf@(WLeaf w _)                 = WNode (w+w') leaf         (WLeaf w' a')
-  go path (WNode w l r) | path `testBit` 0 = WNode (w+w') (go path' l) r
-                        | otherwise        = WNode (w+w') l            (go path' r)
+foldTree :: (Weight -> a -> b)
+         -> (Weight -> b -> WTree a -> b)
+         -> (Weight -> WTree a -> b -> b)
+         -> Size -> WTree a
+         -> b
+foldTree fLeaf fLeft fRight = go where
+  go _    (WLeaf w a)                      = fLeaf  w a
+  go path (WNode w l r) | path `testBit` 0 = fRight w l            (go path' r)
+                        | otherwise        = fLeft  w (go path' l) r
                         where path' = path `shiftR` 1
+{-# INLINABLE foldTree #-}
+
+insert :: Weight -> a -> Tree a -> Tree a
+insert w' a' (Tree size wt) = Tree (size+1) $ foldTree (\w a -> WNode (w+w') (WLeaf w a) (WLeaf w' a'))
+                                                       (\w   -> WNode (w+w'))
+                                                       (\w   -> WNode (w+w'))
+                                                       size wt
 
 uninsert :: Tree a -> (Weight, a, Maybe (Tree a))
-uninsert (Tree size wt) = case go size wt of
-                            (w', a', mt) -> (w', a', Tree size <$> mt) -- should this be (Tree $ size - 1)???
-  where
-    go _    (WLeaf w a)   = (w, a, Nothing)
-    go path (WNode w l r)
-      | path `testBit` 0  = case go path' r of
-                              (w', a', Just r') -> (w', a', Just $ WNode (w-w') l r')
-                              (w', a', Nothing) -> (w', a', Just l)
-      | otherwise         = case go path' l of
-                              (w', a', Just l') -> (w', a', Just $ WNode (w-w') l' r)
-                              (w', a', Nothing) -> (w', a', Just r)
-      where path' = path `shiftR` 1
+uninsert (Tree size wt) = case foldTree (\w a       -> (w,a,Nothing))
+                                        (\w ul' r   -> case ul' of
+                                                         (w', a', Just l') -> (w', a', Just $ WNode (w-w') l' r)
+                                                         (w', a', Nothing) -> (w', a', Just r))
+                                        (\w l   ur' -> case ur' of
+                                                         (w', a', Just r') -> (w', a', Just $ WNode (w-w') l r')
+                                                         (w', a', Nothing) -> (w', a', Just l))
+                                        (size-1) wt of
+                            (w', a', mt) -> (w', a', Tree (size-1) <$> mt)
 
 wreplace :: Weight -> a -> Weight -> WTree a -> (Weight, a, WTree a)
 wreplace wNew aNew = go where
@@ -91,3 +100,8 @@ frequencyT (Tree _ (WTree w bt)) = blookup bt =<< choose (0, w-1)
 
 frequency' :: [(Weight,Gen a)] -> Gen a
 frequency' = maybe (error "frequency' used with empty list") frequencyT . fromList
+
+prop_insert_uninsert :: NonZero Weight -> Char -> NonEmptyList (NonZero Weight, Char) -> Bool
+prop_insert_uninsert (NonZero w) x (NonEmpty cs) =
+  let Just t = fromList $ map (first getNonZero) cs
+  in uninsert (insert w x t) == (w, x, Just t)
