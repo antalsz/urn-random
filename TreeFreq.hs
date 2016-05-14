@@ -55,21 +55,23 @@ foldTree fLeaf fLeft fRight = go where
 {-# INLINABLE foldTree #-}
 
 insert :: Weight -> a -> Tree a -> Tree a
-insert w' a' (Tree size wt) = Tree (size+1) $ foldTree (\w a -> WNode (w+w') (WLeaf w a) (WLeaf w' a'))
-                                                       (\w   -> WNode (w+w'))
-                                                       (\w   -> WNode (w+w'))
-                                                       size wt
+insert w' a' (Tree size wt) =
+  Tree (size+1) $ foldTree (\w a -> WNode (w+w') (WLeaf w a) (WLeaf w' a'))
+                           (\w   -> WNode (w+w'))
+                           (\w   -> WNode (w+w'))
+                           size wt
 
 uninsert :: Tree a -> (Weight, a, Maybe (Tree a))
-uninsert (Tree size wt) = case foldTree (\w a       -> (w,a,Nothing))
-                                        (\w ul' r   -> case ul' of
-                                                         (w', a', Just l') -> (w', a', Just $ WNode (w-w') l' r)
-                                                         (w', a', Nothing) -> (w', a', Just r))
-                                        (\w l   ur' -> case ur' of
-                                                         (w', a', Just r') -> (w', a', Just $ WNode (w-w') l r')
-                                                         (w', a', Nothing) -> (w', a', Just l))
-                                        (size-1) wt of
-                            (w', a', mt) -> (w', a', Tree (size-1) <$> mt)
+uninsert (Tree size wt) =
+  case foldTree (\w a       -> (w, a, Nothing))
+                (\w ul' r   -> case ul' of
+                                 (w', a', Just l') -> (w', a', Just $ WNode (w-w') l' r)
+                                 (w', a', Nothing) -> (w', a', Just r))
+                (\w l   ur' -> case ur' of
+                                 (w', a', Just r') -> (w', a', Just $ WNode (w-w') l r')
+                                 (w', a', Nothing) -> (w', a', Just l))
+                (size-1) wt of
+    (w', a', mt) -> (w', a', Tree (size-1) <$> mt)
 
 wreplace :: Weight -> a -> Weight -> WTree a -> (Weight, a, WTree a)
 wreplace wNew aNew = go where
