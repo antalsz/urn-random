@@ -30,8 +30,6 @@ data Tree a = Tree { size  :: !Size
                    , wtree :: !(WTree a) }
             deriving (Eq, Ord, Show)
 
-pattern Leaf w a = Tree { size = 1, wtree = WLeaf w a }
-
 blookup :: BTree a -> Weight -> a
 blookup (BLeaf a) _ =
   a
@@ -109,9 +107,12 @@ delete i t = case uninsert t of
                                         (w'', a'', t'') -> (w'', a'', Just t'')
                res@(_, _, Nothing) -> res
 
+singleton :: Weight -> a -> Tree a
+singleton w a = Tree { size = 1, wtree = WLeaf w a }
+
 fromList :: [(Weight,a)] -> Maybe (Tree a)
 fromList []          = Nothing
-fromList ((w,t):wts) = Just $ foldl' (flip $ uncurry insert) (Leaf w t) wts
+fromList ((w,t):wts) = Just $ foldl' (flip $ uncurry insert) (singleton w t) wts
 
 frequencyT :: Tree (Gen a) -> Gen a
 frequencyT (Tree _ (WTree w bt)) = blookup bt =<< choose (0, w-1)
