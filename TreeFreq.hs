@@ -73,6 +73,22 @@ uninsert (Tree size wt) =
                 (size-1) wt of
     (w', a', mt) -> (w', a', Tree (size-1) <$> mt)
 
+wupdate :: (Weight -> a -> (Weight, a)) -> Weight -> WTree a -> (Weight, a, Weight, a, WTree a)
+wupdate newLeaf = go where
+  go _ (WLeaf w a) =
+    let (wNew, aNew) = newLeaf w a
+    in (w, a, wNew, aNew, WLeaf wNew aNew)
+  go i (WNode w l@(WTree wl _) r)
+    | i < wl    = case go i l of
+                    (wOld, aOld, wNew, aNew, l') -> (wOld, aOld, wNew, aNew, WNode (w-wOld+wNew) l' r)
+    | otherwise = case go (i-wl) r of
+                    (wOld, aOld, wNew, aNew, r') -> (wOld, aOld, wNew, aNew, WNode (w-wOld+wNew) l r')
+
+update :: (Weight -> a -> (Weight, a)) -> Weight -> Tree a -> (Weight, a, Weight, a, Tree a)
+update newLeaf i (Tree size wt) =
+  case wupdate newLeaf i wt of
+    (wOld, aOld, wNew, aNew, wt') -> (wOld, aOld, wNew, aNew, Tree size wt')
+
 wreplace :: Weight -> a -> Weight -> WTree a -> (Weight, a, WTree a)
 wreplace wNew aNew = go where
   go _ (WLeaf w a) =
