@@ -12,6 +12,8 @@ import Test.QuickCheck
 
 type Weight = Word
 
+newtype Index = Index Word deriving (Eq, Ord) -- Show?
+
 newtype Size = Size Word deriving ( Eq, Ord, Show, Bounded, Enum
                                   , Num, Real, Integral
                                   , Bits, FiniteBits )
@@ -31,21 +33,21 @@ data Urn a = Urn { size  :: !Size
                  , wtree :: !(WTree a) }
            deriving (Eq, Ord, Show)
 
-blookup :: BTree a -> Weight -> a
+blookup :: BTree a -> Index -> a
 blookup (BLeaf a) _ =
   a
-blookup (BNode (WTree wl l) (WTree _ r)) i
-  | i < wl    = blookup l i
-  | otherwise = blookup r (i - wl)
+blookup (BNode (WTree wl l) (WTree _ r)) (Index i)
+  | i < wl    = blookup l (Index i)
+  | otherwise = blookup r (Index $ i - wl)
 
-lookup :: Urn a -> Weight -> a
+lookup :: Urn a -> Index -> a
 lookup = blookup . btree . wtree
 
 foldWTree :: (Weight -> a -> b)
-         -> (Weight -> b -> WTree a -> b)
-         -> (Weight -> WTree a -> b -> b)
-         -> Size -> WTree a
-         -> b
+          -> (Weight -> b -> WTree a -> b)
+          -> (Weight -> WTree a -> b -> b)
+          -> Size -> WTree a
+          -> b
 foldWTree fLeaf fLeft fRight = go where
   go _    (WLeaf w a)                      = fLeaf  w a
   go path (WNode w l r) | path `testBit` 0 = fRight w l            (go path' r)
@@ -72,37 +74,37 @@ uninsert (Urn size wt) =
                  (size-1) wt of
     (w', a', mt) -> (w', a', Urn (size-1) <$> mt)
 
-wupdate :: (Weight -> a -> (Weight, a)) -> Weight -> WTree a -> (Weight, a, Weight, a, WTree a)
+wupdate :: (Weight -> a -> (Weight, a)) -> Index -> WTree a -> (Weight, a, Weight, a, WTree a)
 wupdate upd = go where
   go _ (WLeaf w a) =
     let (wNew, aNew) = upd w a
     in (w, a, wNew, aNew, WLeaf wNew aNew)
-  go i (WNode w l@(WTree wl _) r)
-    | i < wl    = case go i l of
+  go (Index i) (WNode w l@(WTree wl _) r)
+    | i < wl    = case go (Index i) l of
                     (wOld, aOld, wNew, aNew, l') -> (wOld, aOld, wNew, aNew, WNode (w-wOld+wNew) l' r)
-    | otherwise = case go (i-wl) r of
+    | otherwise = case go (Index $ i-wl) r of
                     (wOld, aOld, wNew, aNew, r') -> (wOld, aOld, wNew, aNew, WNode (w-wOld+wNew) l r')
 
-update :: (Weight -> a -> (Weight, a)) -> Weight -> Urn a -> (Weight, a, Weight, a, Urn a)
+update :: (Weight -> a -> (Weight, a)) -> Index -> Urn a -> (Weight, a, Weight, a, Urn a)
 update upd i (Urn size wt) =
   case wupdate upd i wt of
     (wOld, aOld, wNew, aNew, wt') -> (wOld, aOld, wNew, aNew, Urn size wt')
 
-wreplace :: Weight -> a -> Weight -> WTree a -> (Weight, a, WTree a)
+wreplace :: Weight -> a -> Index -> WTree a -> (Weight, a, WTree a)
 wreplace wNew aNew = go where
   go _ (WLeaf w a) =
     (w, a, WLeaf wNew aNew)
-  go i (WNode w l@(WTree wl _) r)
-    | i < wl    = case go i l of
+  go (Index i) (WNode w l@(WTree wl _) r)
+    | i < wl    = case go (Index i) l of
                     (w', a', l') -> (w', a', WNode (w-w'+wNew) l' r)
-    | otherwise = case go (i-wl) r of
+    | otherwise = case go (Index $ i-wl) r of
                     (w', a', r') -> (w', a', WNode (w-w'+wNew) l r')
 
-replace :: Weight -> a -> Weight -> Urn a -> (Weight, a, Urn a)
+replace :: Weight -> a -> Index -> Urn a -> (Weight, a, Urn a)
 replace wNew aNew i (Urn size wt) = case wreplace wNew aNew i wt of
                                       (w', a', wt') -> (w', a', Urn size wt')
 
-delete :: Weight -> Urn a -> (Weight, a, Maybe (Urn a))
+delete :: Index -> Urn a -> (Weight, a, Maybe (Urn a))
 delete i t = case uninsert t of
                (w', a', Just t')   -> case replace w' a' i t' of
                                         (w'', a'', t'') -> (w'', a'', Just t'')
@@ -116,7 +118,7 @@ fromList []          = Nothing
 fromList ((w,t):wts) = Just $ foldl' (flip $ uncurry insert) (singleton w t) wts
 
 frequencyT :: Urn (Gen a) -> Gen a
-frequencyT (Urn _ (WTree w bt)) = blookup bt =<< choose (0, w-1)
+frequencyT (Urn _ (WTree w bt)) = blookup bt . Index =<< choose (0, w-1)
 
 frequency' :: [(Weight,Gen a)] -> Gen a
 frequency' = maybe (error "frequency' used with empty list") frequencyT . fromList
