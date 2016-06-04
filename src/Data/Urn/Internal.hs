@@ -41,35 +41,35 @@ blookup (BNode (WTree wl l) (WTree _ r)) i
 lookup :: Tree a -> Weight -> a
 lookup = blookup . btree . wtree
 
-foldTree :: (Weight -> a -> b)
+foldWTree :: (Weight -> a -> b)
          -> (Weight -> b -> WTree a -> b)
          -> (Weight -> WTree a -> b -> b)
          -> Size -> WTree a
          -> b
-foldTree fLeaf fLeft fRight = go where
+foldWTree fLeaf fLeft fRight = go where
   go _    (WLeaf w a)                      = fLeaf  w a
   go path (WNode w l r) | path `testBit` 0 = fRight w l            (go path' r)
                         | otherwise        = fLeft  w (go path' l) r
                         where path' = path `shiftR` 1
-{-# INLINABLE foldTree #-}
+{-# INLINABLE foldWTree #-}
 
 insert :: Weight -> a -> Tree a -> Tree a
 insert w' a' (Tree size wt) =
-  Tree (size+1) $ foldTree (\w a -> WNode (w+w') (WLeaf w a) (WLeaf w' a'))
-                           (\w   -> WNode (w+w'))
-                           (\w   -> WNode (w+w'))
-                           size wt
+  Tree (size+1) $ foldWTree (\w a -> WNode (w+w') (WLeaf w a) (WLeaf w' a'))
+                            (\w   -> WNode (w+w'))
+                            (\w   -> WNode (w+w'))
+                            size wt
 
 uninsert :: Tree a -> (Weight, a, Maybe (Tree a))
 uninsert (Tree size wt) =
-  case foldTree (\w a       -> (w, a, Nothing))
-                (\w ul' r   -> case ul' of
-                                 (w', a', Just l') -> (w', a', Just $ WNode (w-w') l' r)
-                                 (w', a', Nothing) -> (w', a', Just r))
-                (\w l   ur' -> case ur' of
-                                 (w', a', Just r') -> (w', a', Just $ WNode (w-w') l r')
-                                 (w', a', Nothing) -> (w', a', Just l))
-                (size-1) wt of
+  case foldWTree (\w a       -> (w, a, Nothing))
+                 (\w ul' r   -> case ul' of
+                                  (w', a', Just l') -> (w', a', Just $ WNode (w-w') l' r)
+                                  (w', a', Nothing) -> (w', a', Just r))
+                 (\w l   ur' -> case ur' of
+                                  (w', a', Just r') -> (w', a', Just $ WNode (w-w') l r')
+                                  (w', a', Nothing) -> (w', a', Just l))
+                 (size-1) wt of
     (w', a', mt) -> (w', a', Tree (size-1) <$> mt)
 
 wupdate :: (Weight -> a -> (Weight, a)) -> Weight -> WTree a -> (Weight, a, Weight, a, WTree a)
