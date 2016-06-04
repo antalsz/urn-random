@@ -7,7 +7,7 @@ module Data.Urn.QQ.ParseExp (
   wordExp, weightExp, sizeExp,
   btreeExp, wtreeExp,
   urnExp
-  ) where
+) where
 
 import Data.Traversable
 
