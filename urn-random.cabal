@@ -22,6 +22,7 @@ source-repository head
 
 library
   exposed-modules:     Data.Urn.QQ
+                     , Data.Urn.QQ.ParseExp
                      , Data.Urn.Internal
   
   hs-source-dirs:      src
