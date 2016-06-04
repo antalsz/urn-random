@@ -27,9 +27,9 @@ data WTree a = WTree { weight :: !Weight
 pattern WLeaf w a   = WTree { weight = w, btree = BLeaf a }
 pattern WNode w l r = WTree { weight = w, btree = BNode l r }
 
-data Tree a = Tree { size  :: !Size
-                   , wtree :: !(WTree a) }
-            deriving (Eq, Ord, Show)
+data Urn a = Urn { size  :: !Size
+                 , wtree :: !(WTree a) }
+           deriving (Eq, Ord, Show)
 
 blookup :: BTree a -> Weight -> a
 blookup (BLeaf a) _ =
@@ -38,7 +38,7 @@ blookup (BNode (WTree wl l) (WTree _ r)) i
   | i < wl    = blookup l i
   | otherwise = blookup r (i - wl)
 
-lookup :: Tree a -> Weight -> a
+lookup :: Urn a -> Weight -> a
 lookup = blookup . btree . wtree
 
 foldWTree :: (Weight -> a -> b)
@@ -53,15 +53,15 @@ foldWTree fLeaf fLeft fRight = go where
                         where path' = path `shiftR` 1
 {-# INLINABLE foldWTree #-}
 
-insert :: Weight -> a -> Tree a -> Tree a
-insert w' a' (Tree size wt) =
-  Tree (size+1) $ foldWTree (\w a -> WNode (w+w') (WLeaf w a) (WLeaf w' a'))
-                            (\w   -> WNode (w+w'))
-                            (\w   -> WNode (w+w'))
-                            size wt
+insert :: Weight -> a -> Urn a -> Urn a
+insert w' a' (Urn size wt) =
+  Urn (size+1) $ foldWTree (\w a -> WNode (w+w') (WLeaf w a) (WLeaf w' a'))
+                           (\w   -> WNode (w+w'))
+                           (\w   -> WNode (w+w'))
+                           size wt
 
-uninsert :: Tree a -> (Weight, a, Maybe (Tree a))
-uninsert (Tree size wt) =
+uninsert :: Urn a -> (Weight, a, Maybe (Urn a))
+uninsert (Urn size wt) =
   case foldWTree (\w a       -> (w, a, Nothing))
                  (\w ul' r   -> case ul' of
                                   (w', a', Just l') -> (w', a', Just $ WNode (w-w') l' r)
@@ -70,7 +70,7 @@ uninsert (Tree size wt) =
                                   (w', a', Just r') -> (w', a', Just $ WNode (w-w') l r')
                                   (w', a', Nothing) -> (w', a', Just l))
                  (size-1) wt of
-    (w', a', mt) -> (w', a', Tree (size-1) <$> mt)
+    (w', a', mt) -> (w', a', Urn (size-1) <$> mt)
 
 wupdate :: (Weight -> a -> (Weight, a)) -> Weight -> WTree a -> (Weight, a, Weight, a, WTree a)
 wupdate upd = go where
@@ -83,10 +83,10 @@ wupdate upd = go where
     | otherwise = case go (i-wl) r of
                     (wOld, aOld, wNew, aNew, r') -> (wOld, aOld, wNew, aNew, WNode (w-wOld+wNew) l r')
 
-update :: (Weight -> a -> (Weight, a)) -> Weight -> Tree a -> (Weight, a, Weight, a, Tree a)
-update upd i (Tree size wt) =
+update :: (Weight -> a -> (Weight, a)) -> Weight -> Urn a -> (Weight, a, Weight, a, Urn a)
+update upd i (Urn size wt) =
   case wupdate upd i wt of
-    (wOld, aOld, wNew, aNew, wt') -> (wOld, aOld, wNew, aNew, Tree size wt')
+    (wOld, aOld, wNew, aNew, wt') -> (wOld, aOld, wNew, aNew, Urn size wt')
 
 wreplace :: Weight -> a -> Weight -> WTree a -> (Weight, a, WTree a)
 wreplace wNew aNew = go where
@@ -98,25 +98,25 @@ wreplace wNew aNew = go where
     | otherwise = case go (i-wl) r of
                     (w', a', r') -> (w', a', WNode (w-w'+wNew) l r')
 
-replace :: Weight -> a -> Weight -> Tree a -> (Weight, a, Tree a)
-replace wNew aNew i (Tree size wt) = case wreplace wNew aNew i wt of
-                                       (w', a', wt') -> (w', a', Tree size wt')
+replace :: Weight -> a -> Weight -> Urn a -> (Weight, a, Urn a)
+replace wNew aNew i (Urn size wt) = case wreplace wNew aNew i wt of
+                                      (w', a', wt') -> (w', a', Urn size wt')
 
-delete :: Weight -> Tree a -> (Weight, a, Maybe (Tree a))
+delete :: Weight -> Urn a -> (Weight, a, Maybe (Urn a))
 delete i t = case uninsert t of
                (w', a', Just t')   -> case replace w' a' i t' of
                                         (w'', a'', t'') -> (w'', a'', Just t'')
                res@(_, _, Nothing) -> res
 
-singleton :: Weight -> a -> Tree a
-singleton w a = Tree { size = 1, wtree = WLeaf w a }
+singleton :: Weight -> a -> Urn a
+singleton w a = Urn { size = 1, wtree = WLeaf w a }
 
-fromList :: [(Weight,a)] -> Maybe (Tree a)
+fromList :: [(Weight,a)] -> Maybe (Urn a)
 fromList []          = Nothing
 fromList ((w,t):wts) = Just $ foldl' (flip $ uncurry insert) (singleton w t) wts
 
-frequencyT :: Tree (Gen a) -> Gen a
-frequencyT (Tree _ (WTree w bt)) = blookup bt =<< choose (0, w-1)
+frequencyT :: Urn (Gen a) -> Gen a
+frequencyT (Urn _ (WTree w bt)) = blookup bt =<< choose (0, w-1)
 
 frequency' :: [(Weight,Gen a)] -> Gen a
 frequency' = maybe (error "frequency' used with empty list") frequencyT . fromList

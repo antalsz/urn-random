@@ -28,9 +28,9 @@ embedWTree wt =
   RecConE 'WTree [ ('weight, embedWeight $ weight wt)
                  , ('btree,  embedBTree  $ btree  wt) ]
 
-embedTree :: Tree Exp -> Exp
-embedTree t = RecConE 'Tree [ ('size,  embedSize  $ size  t)
-                            , ('wtree, embedWTree $ wtree t) ]
+embedTree :: Urn Exp -> Exp
+embedTree u = RecConE 'Urn [ ('size,  embedSize  $ size  u)
+                           , ('wtree, embedWTree $ wtree u) ]
 
 -- We don't handle extensions
 parseUrnList :: String -> Either String [(Word, Exp)]
@@ -50,7 +50,7 @@ parseUrnList str =
     Right _ ->
       Left "This urn does not contain a list of pairs"
 
-parseUrn :: String -> Either String (Tree Exp)
+parseUrn :: String -> Either String (Urn Exp)
 parseUrn str = (fromList <$> parseUrnList str) >>= \case
                  Just urn -> Right urn
                  Nothing  -> Left  "Empty urn"
@@ -61,4 +61,4 @@ urn = QuasiQuoter { quoteExp  = either fail (pure . embedTree) . parseUrn
                   , quoteType = unsupported "types"
                   , quoteDec  = unsupported "declarations" }
   where unsupported what =
-          fail $ "Urns are only supported in expressions, not " ++ what
+          fail $ "Literal urns are only supported in expressions, not " ++ what
