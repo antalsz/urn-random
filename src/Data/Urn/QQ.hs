@@ -1,7 +1,6 @@
 {-# LANGUAGE LambdaCase, TemplateHaskell #-}
-{-# OPTIONS_GHC -Wall -fno-warn-name-shadowing #-}
 
-module TreeFreqQQ where
+module Data.Urn.QQ where
 
 import Data.Traversable
 
@@ -9,7 +8,7 @@ import Language.Haskell.TH
 import Language.Haskell.TH.Quote
 import Language.Haskell.Meta.Parse
 
-import TreeFreq
+import Data.Urn.Internal
 
 embedWord :: Word -> Exp
 embedWord = LitE . IntegerL . toInteger

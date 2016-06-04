@@ -1,9 +1,8 @@
 -- TODO: |delete| is wrong!!!
 
 {-# LANGUAGE GeneralizedNewtypeDeriving, PatternSynonyms #-}
-{-# OPTIONS_GHC -funbox-strict-fields -Wall -fno-warn-name-shadowing #-}
 
-module TreeFreq where
+module Data.Urn.Internal where
 
 import Prelude hiding (lookup)
 import Data.Bifunctor
