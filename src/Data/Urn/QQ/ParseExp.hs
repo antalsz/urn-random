@@ -15,6 +15,7 @@ import Language.Haskell.TH
 import Language.Haskell.Meta.Parse
 
 import Data.Urn.Internal
+import Data.Urn.Common (fromList)
 
 -- We don't handle extensions
 parseUrnList :: String -> Either String [(Word, Exp)]

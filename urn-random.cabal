@@ -21,7 +21,11 @@ source-repository head
   location: https://github.com/antalsz/urn-random.git
 
 library
-  exposed-modules:     Data.Urn.QQ
+  exposed-modules:     Data.Urn
+                     , Data.Urn.Index
+                     , Data.Urn.Common
+                     , Data.Urn.QQ
+                     -- Internal details
                      , Data.Urn.RandomWord
                      , Data.Urn.QQ.ParseExp
                      , Data.Urn.Internal
@@ -29,9 +33,12 @@ library
   hs-source-dirs:      src
   
   build-depends:       base >=4.8 && <5
+                     -- Only for 'fromNonEmpty'
+                     , semigroups       >=0.5 && <0.19
+                     -- For the quasi-quoter
                      , template-haskell ==2.10.*
                      , haskell-src-meta ==0.6.*
-                     -- Instances
+                     -- For 'RandomWord' nstances
                      , MonadRandom  ==0.4.*
                      , QuickCheck   ==2.8.*
                      , random-fu    ==0.2.*

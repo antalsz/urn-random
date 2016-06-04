@@ -1,22 +1,41 @@
--- TODO: |delete| is wrong!!!
-
 {-# LANGUAGE GeneralizedNewtypeDeriving, PatternSynonyms #-}
+{-# OPTIONS_HADDOCK not-home #-}
 
-module Data.Urn.Internal where
+module Data.Urn.Internal (
+  -- * Types
+  -- ** Parameters of the trees
+  Weight, Index(..), Size(..),
+  -- ** Tree types (and constructors)
+  BTree(..), WTree(..), pattern WLeaf, pattern WNode, Urn(..),
+  -- * Sampling/lookup ('WTree's and 'BTree's)
+  sample, bsample,
+  -- * Insertion ('Urn's)
+  insert, uninsert,
+  -- * Update ('WTree's)
+  update, replace,
+  -- * General weight-based 'WTree' traversal
+  foldWTree,
+  -- * Raw random index generation
+  randomIndexWith
+) where
 
-import Prelude hiding (lookup)
-import Data.Bifunctor
-import Data.Foldable
 import Data.Bits
-import Test.QuickCheck
+
+-- For the 'Show' instance
+import qualified Data.Ord  as Ord
+import qualified Data.List as List
+
+----------------------------------------
 
 type Weight = Word
 
-newtype Index = Index Word deriving (Eq, Ord) -- Show?
+newtype Index = Index { getIndex :: Word } deriving (Eq, Ord)
+-- This type is opaque, so there's no 'Show' instance.
 
-newtype Size = Size Word deriving ( Eq, Ord, Show, Bounded, Enum
-                                  , Num, Real, Integral
-                                  , Bits, FiniteBits )
+newtype Size = Size { getSize :: Word }
+             deriving ( Eq, Ord, Show, Bounded, Enum
+                      , Num, Real, Integral
+                      , Bits, FiniteBits )
 
 data BTree a = BLeaf a
              | BNode !(WTree a) !(WTree a)
@@ -31,17 +50,41 @@ pattern WNode w l r = WTree { weight = w, btree = BNode l r }
 
 data Urn a = Urn { size  :: !Size
                  , wtree :: !(WTree a) }
-           deriving (Eq, Ord, Show)
+-- TODO: 'Eq' and 'Ord' instances?  We can provide an O(n²) 'Eq' instance, and
+-- an O(n log n) 'Ord' instance; the 'Eq' instance goes down to O(n log n) if
+-- we're willing to require an 'Ord' constraint.
 
-blookup :: BTree a -> Index -> a
-blookup (BLeaf a) _ =
+-- |This 'Show' instance prints out the elements from most-weighted to
+-- least-weighted; however, do not rely on the order of equally-weighted
+-- elements, as this may depend on details of the implementation.
+instance Show a => Show (Urn a) where
+  showsPrec p u = showParen (p > 10) $
+                    showString "fromList " . shows (toList [] $ wtree u) where
+    toList acc (WLeaf w a)   = List.insertBy (flip $ Ord.comparing fst) (w,a) acc
+    toList acc (WNode _ l r) = toList (toList acc l) r
+    toList _   _             = error "[pattern match checker bug]"
+
+-- TODO: A debugging equivalent of 'show' for the tree structure, like
+-- 'Data.Set.showTree'?
+
+----------------------------------------
+
+randomIndexWith :: Functor f => ((Word,Word) -> f Word) -> Urn a -> f Index
+randomIndexWith rand u  = Index <$> rand (0, getSize (size u) - 1)
+{-# INLINABLE randomIndexWith #-}
+
+----------------------------------------
+
+bsample :: BTree a -> Index -> a
+bsample (BLeaf a) _ =
   a
-blookup (BNode (WTree wl l) (WTree _ r)) (Index i)
-  | i < wl    = blookup l (Index i)
-  | otherwise = blookup r (Index $ i - wl)
+bsample (BNode (WTree wl l) (WTree _ r)) (Index i)
+  | i < wl    = bsample l (Index i)
+  | otherwise = bsample r (Index $ i - wl)
 
-lookup :: Urn a -> Index -> a
-lookup = blookup . btree . wtree
+sample :: WTree a -> Index -> a
+sample = bsample . btree
+{-# INLINABLE sample #-}
 
 foldWTree :: (Weight -> a -> b)
           -> (Weight -> b -> WTree a -> b)
@@ -74,8 +117,8 @@ uninsert (Urn size wt) =
                  (size-1) wt of
     (w', a', mt) -> (w', a', Urn (size-1) <$> mt)
 
-wupdate :: (Weight -> a -> (Weight, a)) -> WTree a -> Index -> (Weight, a, Weight, a, WTree a)
-wupdate upd = go where
+update :: (Weight -> a -> (Weight, a)) -> WTree a -> Index -> (Weight, a, Weight, a, WTree a)
+update upd = go where
   go (WLeaf w a) _ =
     let (wNew, aNew) = upd w a
     in (w, a, wNew, aNew, WLeaf wNew aNew)
@@ -85,13 +128,8 @@ wupdate upd = go where
     | otherwise = case go r (Index $ i-wl) of
                     (wOld, aOld, wNew, aNew, r') -> (wOld, aOld, wNew, aNew, WNode (w-wOld+wNew) l r')
 
-update :: (Weight -> a -> (Weight, a)) -> Urn a -> Index -> (Weight, a, Weight, a, Urn a)
-update upd (Urn size wt) i =
-  case wupdate upd wt i of
-    (wOld, aOld, wNew, aNew, wt') -> (wOld, aOld, wNew, aNew, Urn size wt')
-
-wreplace :: Weight -> a -> WTree a -> Index -> (Weight, a, WTree a)
-wreplace wNew aNew = go where
+replace :: Weight -> a -> WTree a -> Index -> (Weight, a, WTree a)
+replace wNew aNew = go where
   go (WLeaf w a) _ =
     (w, a, WLeaf wNew aNew)
   go (WNode w l@(WTree wl _) r) (Index i)
@@ -99,31 +137,3 @@ wreplace wNew aNew = go where
                     (w', a', l') -> (w', a', WNode (w-w'+wNew) l' r)
     | otherwise = case go r (Index $ i-wl) of
                     (w', a', r') -> (w', a', WNode (w-w'+wNew) l r')
-
-replace :: Weight -> a -> Urn a -> Index -> (Weight, a, Urn a)
-replace wNew aNew (Urn size wt) i = case wreplace wNew aNew wt i of
-                                      (w', a', wt') -> (w', a', Urn size wt')
-
-delete :: Urn a -> Index -> (Weight, a, Maybe (Urn a))
-delete t i = case uninsert t of
-               (w', a', Just t')   -> case replace w' a' t' i of
-                                        (w'', a'', t'') -> (w'', a'', Just t'')
-               res@(_, _, Nothing) -> res
-
-singleton :: Weight -> a -> Urn a
-singleton w a = Urn { size = 1, wtree = WLeaf w a }
-
-fromList :: [(Weight,a)] -> Maybe (Urn a)
-fromList []          = Nothing
-fromList ((w,t):wts) = Just $ foldl' (flip $ uncurry insert) (singleton w t) wts
-
-frequencyT :: Urn (Gen a) -> Gen a
-frequencyT (Urn _ (WTree w bt)) = blookup bt . Index =<< choose (0, w-1)
-
-frequency' :: [(Weight,Gen a)] -> Gen a
-frequency' = maybe (error "frequency' used with empty list") frequencyT . fromList
-
-prop_insert_uninsert :: NonZero Weight -> Char -> NonEmptyList (NonZero Weight, Char) -> Bool
-prop_insert_uninsert (NonZero w) x (NonEmpty cs) =
-  let Just t = fromList $ map (first getNonZero) cs
-  in uninsert (insert w x t) == (w, x, Just t)
