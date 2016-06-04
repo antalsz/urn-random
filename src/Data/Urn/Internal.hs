@@ -74,39 +74,39 @@ uninsert (Urn size wt) =
                  (size-1) wt of
     (w', a', mt) -> (w', a', Urn (size-1) <$> mt)
 
-wupdate :: (Weight -> a -> (Weight, a)) -> Index -> WTree a -> (Weight, a, Weight, a, WTree a)
+wupdate :: (Weight -> a -> (Weight, a)) -> WTree a -> Index -> (Weight, a, Weight, a, WTree a)
 wupdate upd = go where
-  go _ (WLeaf w a) =
+  go (WLeaf w a) _ =
     let (wNew, aNew) = upd w a
     in (w, a, wNew, aNew, WLeaf wNew aNew)
-  go (Index i) (WNode w l@(WTree wl _) r)
-    | i < wl    = case go (Index i) l of
+  go (WNode w l@(WTree wl _) r) (Index i)
+    | i < wl    = case go l (Index i) of
                     (wOld, aOld, wNew, aNew, l') -> (wOld, aOld, wNew, aNew, WNode (w-wOld+wNew) l' r)
-    | otherwise = case go (Index $ i-wl) r of
+    | otherwise = case go r (Index $ i-wl) of
                     (wOld, aOld, wNew, aNew, r') -> (wOld, aOld, wNew, aNew, WNode (w-wOld+wNew) l r')
 
-update :: (Weight -> a -> (Weight, a)) -> Index -> Urn a -> (Weight, a, Weight, a, Urn a)
-update upd i (Urn size wt) =
-  case wupdate upd i wt of
+update :: (Weight -> a -> (Weight, a)) -> Urn a -> Index -> (Weight, a, Weight, a, Urn a)
+update upd (Urn size wt) i =
+  case wupdate upd wt i of
     (wOld, aOld, wNew, aNew, wt') -> (wOld, aOld, wNew, aNew, Urn size wt')
 
-wreplace :: Weight -> a -> Index -> WTree a -> (Weight, a, WTree a)
+wreplace :: Weight -> a -> WTree a -> Index -> (Weight, a, WTree a)
 wreplace wNew aNew = go where
-  go _ (WLeaf w a) =
+  go (WLeaf w a) _ =
     (w, a, WLeaf wNew aNew)
-  go (Index i) (WNode w l@(WTree wl _) r)
-    | i < wl    = case go (Index i) l of
+  go (WNode w l@(WTree wl _) r) (Index i)
+    | i < wl    = case go l (Index i) of
                     (w', a', l') -> (w', a', WNode (w-w'+wNew) l' r)
-    | otherwise = case go (Index $ i-wl) r of
+    | otherwise = case go r (Index $ i-wl) of
                     (w', a', r') -> (w', a', WNode (w-w'+wNew) l r')
 
-replace :: Weight -> a -> Index -> Urn a -> (Weight, a, Urn a)
-replace wNew aNew i (Urn size wt) = case wreplace wNew aNew i wt of
+replace :: Weight -> a -> Urn a -> Index -> (Weight, a, Urn a)
+replace wNew aNew (Urn size wt) i = case wreplace wNew aNew wt i of
                                       (w', a', wt') -> (w', a', Urn size wt')
 
-delete :: Index -> Urn a -> (Weight, a, Maybe (Urn a))
-delete i t = case uninsert t of
-               (w', a', Just t')   -> case replace w' a' i t' of
+delete :: Urn a -> Index -> (Weight, a, Maybe (Urn a))
+delete t i = case uninsert t of
+               (w', a', Just t')   -> case replace w' a' t' i of
                                         (w'', a'', t'') -> (w'', a'', Just t'')
                res@(_, _, Nothing) -> res
 
