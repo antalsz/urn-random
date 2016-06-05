@@ -105,17 +105,17 @@ insert w' a' (Urn size wt) =
                            (\w   -> WNode (w+w'))
                            size wt
 
-uninsert :: Urn a -> (Weight, a, Maybe (Urn a))
+uninsert :: Urn a -> (Weight, a, Weight, Maybe (Urn a))
 uninsert (Urn size wt) =
-  case foldWTree (\w a       -> (w, a, Nothing))
+  case foldWTree (\w a       -> (w, a, 0, Nothing))
                  (\w ul' r   -> case ul' of
-                                  (w', a', Just l') -> (w', a', Just $ WNode (w-w') l' r)
-                                  (w', a', Nothing) -> (w', a', Just r))
+                                  (w', a', lb, Just l') -> (w', a', lb, Just $ WNode (w-w') l' r)
+                                  (w', a', lb, Nothing) -> (w', a', lb, Just r))
                  (\w l   ur' -> case ur' of
-                                  (w', a', Just r') -> (w', a', Just $ WNode (w-w') l r')
-                                  (w', a', Nothing) -> (w', a', Just l))
+                                  (w', a', lb, Just r') -> (w', a', lb + weight l, Just $ WNode (w-w') l r')
+                                  (w', a', lb, Nothing) -> (w', a', lb + weight l, Just l))
                  (size-1) wt of
-    (w', a', mt) -> (w', a', Urn (size-1) <$> mt)
+    (w', a', lb, mt) -> (w', a', lb, Urn (size-1) <$> mt)
 
 update :: (Weight -> a -> (Weight, a)) -> WTree a -> Index -> (Weight, a, Weight, a, WTree a)
 update upd = go where

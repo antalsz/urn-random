@@ -1,5 +1,3 @@
--- TODO: 'remove' is wrong!!!
-
 {-# OPTIONS_HADDOCK not-home #-}
 
 module Data.Urn.Index (
@@ -35,10 +33,15 @@ sample :: Urn a -> Index -> a
 sample = Internal.sample . Internal.wtree
 
 remove :: Urn a -> Index -> (Weight, a, Maybe (Urn a))
-remove t i = case Internal.uninsert t of
-               (w', a', Just t')   -> case replace w' a' t' i of
-                                        (w'', a'', t'') -> (w'', a'', Just t'')
-               res@(_, _, Nothing) -> res
+remove u (Index i) =
+  case Internal.uninsert u of
+    (w', a', lb,  Just t')
+      | i < lb               -> addJust $ replace w' a' t' (Index i)
+      | i < lb + w'          -> (w', a', Just t')
+      | otherwise            -> addJust $ replace w' a' t' (Index $ i - w')
+    (w', a', _lb, Nothing)   -> (w', a', Nothing)
+  where addJust (w'',a'',t'') = (w'', a'', Just t'')
+        {-# INLINE addJust #-}
 
 update :: (Weight -> a -> (Weight, a)) -> Urn a -> Index -> (Weight, a, Weight, a, Urn a)
 update upd (Urn size wt) i =
