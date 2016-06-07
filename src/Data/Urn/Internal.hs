@@ -104,6 +104,7 @@ insert w' a' (Urn size wt) =
                            (\w   -> WNode (w+w'))
                            (\w   -> WNode (w+w'))
                            size wt
+{-# INLINABLE insert #-}
 
 uninsert :: Urn a -> (Weight, a, Weight, Maybe (Urn a))
 uninsert (Urn size wt) =
@@ -116,6 +117,7 @@ uninsert (Urn size wt) =
                                   (w', a', lb, Nothing) -> (w', a', lb + weight l, Just l))
                  (size-1) wt of
     (w', a', lb, mt) -> (w', a', lb, Urn (size-1) <$> mt)
+{-# INLINABLE uninsert #-}
 
 update :: (Weight -> a -> (Weight, a)) -> WTree a -> Index -> (Weight, a, Weight, a, WTree a)
 update upd = go where

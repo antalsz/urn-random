@@ -34,11 +34,11 @@ library
   
   build-depends:       base >=4.8 && <5
                      -- Only for 'fromNonEmpty'
-                     , semigroups       >=0.5 && <0.19
+                     , semigroups >=0.5 && <0.19
                      -- For the quasi-quoter
                      , template-haskell ==2.10.*
                      , haskell-src-meta ==0.6.*
-                     -- For 'RandomWord' nstances
+                     -- For 'RandomWord' instances
                      , MonadRandom  ==0.4.*
                      , QuickCheck   ==2.8.*
                      , random-fu    ==0.2.*

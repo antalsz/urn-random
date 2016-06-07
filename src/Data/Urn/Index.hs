@@ -35,12 +35,12 @@ sample = Internal.sample . Internal.wtree
 remove :: Urn a -> Index -> (Weight, a, Maybe (Urn a))
 remove u (Index i) =
   case Internal.uninsert u of
-    (w', a', lb,  Just t')
-      | i < lb               -> addJust $ replace w' a' t' (Index i)
-      | i < lb + w'          -> (w', a', Just t')
-      | otherwise            -> addJust $ replace w' a' t' (Index $ i - w')
+    (w', a', lb,  Just u')
+      | i < lb               -> addJust $ replace w' a' u' (Index i)
+      | i < lb + w'          -> (w', a', Just u')
+      | otherwise            -> addJust $ replace w' a' u' (Index $ i - w')
     (w', a', _lb, Nothing)   -> (w', a', Nothing)
-  where addJust (w'',a'',t'') = (w'', a'', Just t'')
+  where addJust (w'',a'',u'') = (w'', a'', Just u'')
         {-# INLINE addJust #-}
 
 update :: (Weight -> a -> (Weight, a)) -> Urn a -> Index -> (Weight, a, Weight, a, Urn a)
