@@ -4,7 +4,6 @@ module Data.Urn.RandomWord (RandomWord(..)) where
 
 import Control.Monad.Random
 import Test.QuickCheck
-import qualified Data.Random as RF
 
 -- Transformers
 import           Control.Monad.Trans.Class
@@ -32,9 +31,6 @@ instance (Monad m, RandomGen g) => RandomWord (RandT g m)
 
 instance RandomWord Gen where
   randomWord = choose
-
-instance RandomWord (RF.RVarT m) where
-  randomWord = RF.sample . uncurry RF.Uniform
 
 -- Transformer instances
 
