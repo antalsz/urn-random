@@ -26,7 +26,7 @@ library
                      , Data.Urn.Common
                      , Data.Urn.QQ
                      -- Internal details
-                     , Data.Urn.RandomWord
+                     , Data.Urn.MonadSample
                      , Data.Urn.QQ.ParseExp
                      , Data.Urn.Internal
   
@@ -38,7 +38,7 @@ library
                      -- For the quasi-quoter
                      , template-haskell ==2.10.*
                      , haskell-src-meta ==0.6.*
-                     -- For 'RandomWord' instances
+                     -- For 'MonadSample' instances
                      , MonadRandom  ==0.4.*
                      , QuickCheck   ==2.8.*
                      , transformers ==0.4.*

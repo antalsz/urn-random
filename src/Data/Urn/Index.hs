@@ -2,7 +2,7 @@
 
 module Data.Urn.Index (
   -- * Types
-  Urn(), Index(), Weight(), RandomWord(),
+  Urn(), Index(), Weight(), MonadSample(),
   -- * Constructing 'Urn's
   singleton, fromList, fromNonEmpty,
   -- * Constructing indices
@@ -21,11 +21,11 @@ module Data.Urn.Index (
 
 import Data.Urn.Common
 
-import Data.Urn.RandomWord
+import Data.Urn.MonadSample
 import qualified Data.Urn.Internal as Internal
 import Data.Urn.Internal (Urn(Urn), Index(..))
 
-randomIndex :: RandomWord m => Urn a -> m Index
+randomIndex :: MonadSample m => Urn a -> m Index
 randomIndex = Internal.randomIndexWith randomWord
 {-# INLINABLE randomIndex #-}
 

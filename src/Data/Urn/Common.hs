@@ -2,7 +2,7 @@
 
 module Data.Urn.Common (
   -- * Types
-  Urn(), Weight, RandomWord(),
+  Urn(), Weight, MonadSample(),
   -- * 'Urn' properties
   size, totalWeight,
   -- * Constructing 'Urn's
@@ -16,7 +16,7 @@ import Data.List.NonEmpty (NonEmpty(..), nonEmpty)
 import Data.Foldable
 import Data.Coerce
 
-import Data.Urn.RandomWord
+import Data.Urn.MonadSample
 import Data.Urn.Internal hiding (size)
 import qualified Data.Urn.Internal as Internal
 
