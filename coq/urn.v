@@ -459,51 +459,58 @@ Theorem replace_wf {A} (wNew : Weight) (aNew : A) (i : Index) (wt : WTree A) :
   WTree_weights_match wt ->
   replace_guarantee wNew wt (replace wNew aNew wt i).
 Proof.
-  elim/WTree_deep_rect: wt i => [w a | w l IHl r IHr] i //=;
-    first (by rewrite N.leb_refl N.add_comm /=);
-    move=> /and3P [/eqP eq_w wm_l wm_r].
-  case def_l: l => [wl al]; case: (i < wl); rewrite -def_l.
-  - move: IHl => /(_ i wm_l).
-    case res: (replace wNew aNew i l) => [[w' a'] l'] /= /and3P[wm_l' w'_le /eqP wts].
-    have w'_le' : (w' <=? w)%num. {
-      rewrite eq_w; apply N.leb_le; eapply N.le_trans; last by apply N.le_add_r.
-      by apply N.leb_le.
-    }
-    rewrite wm_l' wm_r !andbT; apply/and3P; split.
-    + rewrite -N.add_sub_swap; last by apply N.leb_le.
-      rewrite eq_w -(N.add_comm wNew) N.add_assoc (N.add_comm wNew) wts.
-      rewrite N.add_sub_swap; first by rewrite N.add_sub.
-      by rewrite N.add_comm; apply N.le_add_r.
-    + by rewrite -eq_w.
-    + by rewrite -!N.add_assoc (N.add_comm _ wNew) (N.add_comm _ w') !N.add_assoc wts.
-  - move: IHr => /(_ (i - wl)%num wm_r).
-    case res: (replace wNew aNew _ r) => [[w' a'] r'] /= /and3P[wm_r' w'_le /eqP wts].
-    have w'_le' : (w' <=? w)%num. {
-      rewrite eq_w; apply N.leb_le; eapply N.le_trans;
-        last by (rewrite N.add_comm; apply N.le_add_r).
-      by apply N.leb_le.
-    }
-    rewrite wm_l wm_r' !andbT; apply/and3P; split.
-    + rewrite -N.add_sub_swap; last by apply N.leb_le.
-      by rewrite eq_w -N.add_assoc wts N.add_assoc N.add_sub.
-    + by rewrite -eq_w.
-    + by rewrite -!N.add_assoc wts.
+  elim/WTree_deep_rect: wt i => [w a | w l IHl r IHr] i //=.
+  * move => _ .
+    destruct i.
+    unfold replace_guarantee.
+    rewrite N.leb_refl N.add_comm; simpl; auto.
+  * move=> /and3P [/eqP eq_w wm_l wm_r].
+    destruct i as [iw] eqn:I.
+    case def_l: l => [wl al]; case: (iw <? wl); rewrite -def_l.
+    - move: IHl => /(_ i wm_l).
+      case res: (replace wNew aNew l i) => [[w' a'] l'] /= /and3P[wm_l' w'_le /eqP wts].
+      have w'_le' : (w' <=? w)%num. {
+        rewrite eq_w; apply N.leb_le; eapply N.le_trans; last by apply N.le_add_r.
+        by apply N.leb_le.
+      }
+      rewrite -I res.
+      unfold replace_guarantee; simpl.
+      rewrite wm_l' wm_r !andbT; apply/and3P; split.
+      + rewrite -N.add_sub_swap; last by apply N.leb_le.
+        rewrite eq_w -(N.add_comm wNew) N.add_assoc (N.add_comm wNew) wts.
+        rewrite N.add_sub_swap; first by rewrite N.add_sub.
+        by rewrite N.add_comm; apply N.le_add_r.
+      + by rewrite -eq_w.
+      + by rewrite -!N.add_assoc (N.add_comm _ wNew) (N.add_comm _ w') !N.add_assoc wts.
+    - move: IHr => /(_ {| getIndex := (iw - wl)%num|}  wm_r).
+      case res: (replace wNew aNew r _) => [[w' a'] r'] /= /and3P[wm_r' w'_le /eqP wts].
+      have w'_le' : (w' <=? w)%num. {
+        rewrite eq_w; apply N.leb_le; eapply N.le_trans;
+          last by (rewrite N.add_comm; apply N.le_add_r).
+        by apply N.leb_le.
+      }
+      rewrite wm_l wm_r' !andbT; apply/and3P; split.
+      + rewrite -N.add_sub_swap; last by apply N.leb_le.
+        by rewrite eq_w -N.add_assoc wts N.add_assoc N.add_sub.
+      + by rewrite -eq_w.
+      + by rewrite -!N.add_assoc wts.
 Qed.
 
 Theorem replace_count {A} (wNew : Weight) (aNew : A) (i : Weight) (wt : WTree A) :
-  let: (_, _, wt') := replace wNew aNew i wt
+  let: (_, _, wt') := replace wNew aNew wt {| getIndex := i |}
   in WTree_count wt' == WTree_count wt.
 Proof.
   elim/WTree_deep_rect: wt i => [w a | w l IHl r IHr] i //=.
-  case def_l: l => [wl al]; case: (i < wl); rewrite -def_l.
+  case def_l: l => [wl al]; case: (i <? wl); rewrite -def_l.
   - move: IHl => /(_ i).
-    by case res: (replace wNew aNew i l) => [[w' a'] l'] /= /eqP->.
+    by case res: (replace wNew aNew l {| getIndex := i|} ) => [[w' a'] l'] /= /eqP->.
   - move: IHr => /(_ (i - wl)%num).
-    by case res: (replace wNew aNew _ r) => [[w' a'] r'] /= /eqP->.
+    by case res: (replace wNew aNew r {| getIndex := i - wl|} ) => [[w' a'] r'] /= /eqP->.
 Qed.
 
+(*
 Theorem replace_wf {A} (wNew : Weight) (aNew : A) (i : Weight) (u : Urn A) :
-  wf_Urn u -> let: (_,_,u') := replace wNew aNew i u in wf_Urn u'.
+  wf_Urn u -> let: (_,_,u') := replace wNew aNew (wtree u) {| getIndex := i|} in wf_Urn {| size := size u; wtree := u' |}.
 Proof.
   case: u => [[s] wt] /andP /= [/eqP count wm]; rewrite /replace /=.
   case result: (replace _ _ _ _) => [[w' a'] wt'].
@@ -518,9 +525,11 @@ Corollary replace_triple_wf {A} (wNew : Weight) (aNew : A) (i : Weight) (u : Urn
   replace wNew aNew i u = (w', a', u') ->
   wf_Urn u'.
 Proof. by move=> /(replace_wf wNew aNew i) WF EQ; move: WF; rewrite EQ. Qed.
+*)
 
 (******************************************************************************)
 
+(*
 Theorem delete_wf {A} (i : Weight) (u : Urn A) :
   wf_Urn u ->
   match delete i u with
@@ -552,9 +561,11 @@ Corollary delete_None_wf {A} (i : Weight) (u : Urn A) (w' : Weight) (a' : A) :
   delete i u = (w', a', None) ->
   size u == MkSize 1.
 Proof. by move=> /(delete_wf i) WF EQ; move: WF; rewrite EQ. Qed.
+*)
 
 (******************************************************************************)
 
+(*
 Theorem insert_uninsert {A} w x (u : Urn A) :
   wf_Urn u ->
   uninsert (insert w x u) = (w, x, Some u).
@@ -565,3 +576,4 @@ Proof.
     cbv [wtree size getSize funcomp succSize predSize'];
     rewrite Pos.pred_N_succ Pos.pred_succ.
 Abort.
+*)
