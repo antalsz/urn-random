@@ -1,6 +1,4 @@
-Require Import Ssreflect.ssreflect.
-Require Import Ssreflect.eqtype Ssreflect.fintype.
-Require Import Ssreflect.ssrfun Ssreflect.ssrbool Ssreflect.ssrnat Ssreflect.seq.
+From mathcomp Require Import ssreflect ssrfun ssrbool ssrnat eqtype seq.
 
 Require Import Coq.ZArith.ZArith.
 Require Import Haskell Option arith_util.

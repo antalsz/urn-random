@@ -1,4 +1,5 @@
-Require Import Ssreflect.ssreflect Ssreflect.eqtype.
+From mathcomp Require Import ssreflect ssrfun ssrbool ssrnat eqtype seq.
+
 Require Import Coq.ZArith.ZArith.
 
 Set Implicit Arguments.
