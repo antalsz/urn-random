@@ -45,8 +45,8 @@ scanSlice Slicing{..} =
 allSlices :: (Foldable t, Foldable f, Alternative f)
           => Slicing a r -> t a -> ([(r, f a)], (Maybe r, f a))
 allSlices slicing =
-  second (second (`appEndo` empty))
-  . first (fmap (second (`appEndo` empty)))
+  second (second cork)
+  . first (fmap (second cork))
   . scanSlice slicing
 
 greatestSlice :: (Foldable t, Foldable f, Alternative f)
