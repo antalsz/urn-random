@@ -1,4 +1,4 @@
-{-# language LambdaCase, MagicHash, TypeApplications, GADTs, RankNTypes, ScopedTypeVariables, PartialTypeSignatures, RecordWildCards #-}
+{-# language LambdaCase, MagicHash, TypeApplications, GADTs, RankNTypes, ScopedTypeVariables, RecordWildCards #-}
 
 module FoldSlice where
 
