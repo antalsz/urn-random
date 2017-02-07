@@ -42,14 +42,14 @@ scanSlice Slicing{..} =
                then (slices <> Endo (pure (first (fromJust . getLast) remainder') <|>), mempty)
                else (slices, remainder'))
 
-allSlices :: (Foldable t, Foldable f, Alternative f)
+allSlices :: (Foldable f, Alternative f, Foldable t)
           => Slicing a r -> t a -> ([(r, f a)], (Maybe r, f a))
 allSlices slicing =
   second (second (`appEndo` empty))
   . first (fmap (second (`appEndo` empty)))
   . scanSlice slicing
 
-greatestSlice :: (Foldable t, Foldable f, Alternative f)
+greatestSlice :: (Foldable f, Alternative f, Foldable t)
               => Slicing a r -> t a -> ((Maybe r, f a), (Maybe r, f a))
 greatestSlice slicing =
   first ((getLast *** cork)
