@@ -92,9 +92,9 @@ almostPerfect node leaf elems | otherwise = (tree, sizeTotal)
 
     bottom = rpadZipWith (\a -> maybe (leaf a) (node (leaf a) . leaf) . join) perfect redistributed
 
-    redistributed = stutter positions remainder
+    redistributed = stutter (map (< sizeTotal-sizePerfect) positions) remainder
 
-    positions = map ((< sizeTotal-sizePerfect) . reverseBits (logBaseInteger 2 (fromIntegral sizePerfect))) [0..]
+    positions = map (reverseBits (logBaseInteger 2 (fromIntegral sizePerfect))) [0..]
 
     ((fromMaybe 0           -> sizePerfect, perfect),
      (fromMaybe sizePerfect -> sizeTotal,   remainder)) = greatestSlice (slicePowersOf 2) elems
