@@ -23,7 +23,7 @@ import qualified Data.Urn.Internal as Internal
 size :: Urn a -> Word
 size = (coerce :: (Urn a -> Size) -> (Urn a -> Word)) Internal.size
 {-# INLINABLE size #-}
-       
+
 totalWeight :: Urn a -> Weight
 totalWeight = weight . wtree
 {-# INLINABLE totalWeight #-}
@@ -41,5 +41,6 @@ fromList = fmap fromNonEmpty . nonEmpty
 {-# INLINABLE fromList #-}
 
 fromNonEmpty :: NonEmpty (Weight,a) -> Urn a
-fromNonEmpty ((w,t):|wts) = addToUrn (singleton w t) wts
+-- fromNonEmpty ((w,t):|wts) = addToUrn (singleton w t) wts
+fromNonEmpty = Internal.construct  -- this is O(n) now
 {-# INLINABLE fromNonEmpty #-}

@@ -1,5 +1,8 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving, PatternSynonyms #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving, PatternSynonyms, TypeApplications #-}
 {-# OPTIONS_HADDOCK not-home #-}
+{-# OPTIONS_GHC -Wall -fno-warn-incomplete-patterns
+                      -fno-warn-name-shadowing
+                      -fno-warn-missing-pattern-synonym-signatures #-}
 
 module Data.Urn.Internal (
   -- * Types
@@ -11,12 +14,14 @@ module Data.Urn.Internal (
   sample, bsample,
   -- * Insertion ('Urn's)
   insert, uninsert,
-  -- * Update ('WTree's)
-  update, replace,
+  -- * Update and construct ('WTree's)
+  update, replace, construct,
   -- * General weight-based 'WTree' traversal
   foldWTree,
   -- * Raw random index generation
-  randomIndexWith
+  randomIndexWith,
+  -- * Debugging
+  showTree
 ) where
 
 import Data.Bits
@@ -24,6 +29,10 @@ import Data.Bits
 -- For the 'Show' instance
 import qualified Data.Ord  as Ord
 import qualified Data.List as List
+import Data.List.NonEmpty (NonEmpty(..))
+import Data.Tree (Tree(..), drawTree)
+
+import Data.Urn.FoldSlice
 
 ----------------------------------------
 
@@ -66,6 +75,13 @@ instance Show a => Show (Urn a) where
 
 -- TODO: A debugging equivalent of 'show' for the tree structure, like
 -- 'Data.Set.showTree'?
+
+showTree :: Show a => Urn a -> String
+showTree (Urn s t)=
+  "(" ++ show (getSize s) ++ ")\n" ++ drawTree (stringTree t)
+  where
+    stringTree (WLeaf w a)   = Node (show (w, a)) []
+    stringTree (WNode w l r) = Node (show w) [stringTree l, stringTree r]
 
 ----------------------------------------
 
@@ -139,3 +155,14 @@ replace wNew aNew = go where
                     (w', a', l') -> (w', a', WNode (w-w'+wNew) l' r)
     | otherwise = case go r (Index $ i-wl) of
                     (w', a', r') -> (w', a', WNode (w-w'+wNew) l r')
+
+construct :: NonEmpty (Weight, a) -> Urn a
+construct list =
+  let (tree, size) = almostPerfect joinTrees (uncurry WLeaf) list
+  in Urn size tree
+  where
+    joinTrees :: WTree a -> WTree a -> WTree a
+    joinTrees x@(WLeaf v _)   y@(WLeaf w _)   = WNode (v + w) x y
+    joinTrees x@(WNode v _ _) y@(WLeaf w _)   = WNode (v + w) x y
+    joinTrees x@(WLeaf v _)   y@(WNode w _ _) = WNode (v + w) x y
+    joinTrees x@(WNode v _ _) y@(WNode w _ _) = WNode (v + w) x y

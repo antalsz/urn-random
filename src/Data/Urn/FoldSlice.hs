@@ -69,37 +69,38 @@ _ `powerOf` _ | otherwise =
 logBaseInteger :: Integer -> Integer -> Integer
 logBaseInteger b n = smallInteger (integerLogBase# b n)
 
-sliceMultiplesOf :: Integer -> Slicing b Integer
+sliceMultiplesOf :: Integral n => n -> Slicing b n
 sliceMultiplesOf n =
   Slicing { next  = const succ
           , split = \l -> l `mod` n == 0
           , start = 0
           , done  = id }
 
-slicePowersOf :: Integer -> Slicing b Integer
+slicePowersOf :: Integral n => n -> Slicing b n
 slicePowersOf n =
   Slicing { next  = const succ
           , split = (`powerOf` n)
           , start = 0
           , done  = id }
 
-almostPerfect :: forall t f a b. Foldable t => (f b -> f b -> f b) -> (a -> f b) -> t a -> f b
+almostPerfect :: forall t f n a b. (Foldable t, Integral n, Bits n)
+              => (f b -> f b -> f b) -> (a -> f b) -> t a -> (f b, n)
 almostPerfect _    _    elems | null elems = error "almostPerfect: empty list"
-almostPerfect node leaf elems | otherwise =
-  fromJust . ala First foldMap . map singular . iterate squish $ bottom
+almostPerfect node leaf elems | otherwise = (tree, sizeTotal)
   where
-    ((                       fromMaybe 0 -> sizePerfect  , perfect),
-     (subtract sizePerfect . fromMaybe 0 -> sizeRemainder, remainder)) =
-      greatestSlice (slicePowersOf 2) elems
+    tree = fromJust . ala First foldMap . map singular . iterate squish $ bottom
 
     bottom = rpadZipWith (\a -> maybe (leaf a) (node (leaf a) . leaf) . join) perfect redistributed
 
-    -- redistributed = map Just remainder  -- change this for little-endian trees
     redistributed = stutter positions remainder
-    positions = map ((< sizeRemainder) . reverseBits (logBaseInteger 2 sizePerfect)) [0..]
+
+    positions = map ((< sizeTotal-sizePerfect) . reverseBits (logBaseInteger 2 (fromIntegral sizePerfect))) [0..]
+
+    ((fromMaybe 0           -> sizePerfect, perfect),
+     (fromMaybe sizePerfect -> sizeTotal,   remainder)) = greatestSlice (slicePowersOf 2) elems
 
     squish :: [f b] -> [f b]
-    squish = map (\[x, y] -> node x y) . map snd . fst . allSlices (sliceMultiplesOf 2)
+    squish = map (\[x, y] -> node x y) . map snd . fst . allSlices (sliceMultiplesOf (2 :: Int))
 
 singular :: [a] -> Maybe a
 singular [a] = Just a
@@ -118,5 +119,3 @@ reverseBits = go zeroBits
           go (r `shiftL` 1 .|. bool zeroBits (bit 0) (testBit x 0))
              (n - 1)
              (x `shiftR` 1)
-
-data Tree a = (Tree a) :-: (Tree a) | L a deriving Show
