@@ -17,9 +17,11 @@ import Control.Newtype
 import GHC.Integer
 import GHC.Integer.Logarithms
 
+-- | Given a generalized difference-list over some 'Alternative', collapse it
 cork :: (Alternative f) => Endo (f a) -> f a
 cork = (`appEndo` empty)
 
+-- | A Slicing is a 'Fold' ala Tekmo's Foldl library, but with a predicate attached too
 data Slicing a r =
   forall s. Slicing { next  :: a -> s -> s
                     , split :: s -> Bool
@@ -29,6 +31,13 @@ data Slicing a r =
 instance Functor (Slicing a) where
   fmap f Slicing{..} = Slicing { done = f . done, ..}
 
+-- | A 'Slicing' describes a strategy for dividing an arbitrary 'Foldable' container into
+-- pieces. This implements that functionality, returning a container of all the "slices"
+-- (each paired with the value of the fold at the end of that slice), and perhaps a
+-- remainder, consisting of a final value of the fold, and the segment of the container
+-- which did not get terminated by a slice. Note also that the slices are returned as
+-- 'Endo (f a)', which means that they are /difference lists/ on 'f'--this means that
+-- concatenating all or some slices resulting from this operation can be done efficiently.
 scanSlice :: forall g f t a r. (Foldable t, Alternative f, Alternative g)
           => Slicing a r
           -> t a
@@ -44,6 +53,9 @@ scanSlice Slicing{..} =
                then (slices <> Endo (pure (first (fromJust . getLast) remainder') <|>), mempty)
                else (slices, remainder'))
 
+-- | A special case of 'scanSlice': return all the slices described by the given 'Slicing',
+-- as well as any remainder that may exist, paired with the appropriate out-values of the
+-- 'Slicing'.
 allSlices :: (Alternative f, Foldable t)
           => Slicing a r -> t a -> ([(r, f a)], (Maybe r, f a))
 allSlices slicing =
@@ -51,6 +63,9 @@ allSlices slicing =
   . first (fmap (second cork))
   . scanSlice slicing
 
+-- | A special case of 'scanSlice': split a container into the longest slice described by
+-- the given 'Slicing', and the remainder, pairing each with the possible out-value of the
+-- 'Slicing', if any such value exists.
 greatestSlice :: (Alternative f, Foldable t)
               => Slicing a r -> t a -> ((Maybe r, f a), (Maybe r, f a))
 greatestSlice slicing =
@@ -59,6 +74,7 @@ greatestSlice slicing =
   . second (second cork)
   . scanSlice @[] slicing
 
+-- | Tests whether @n@ is a power of @b@
 powerOf :: Integral a => a -> a -> Bool
 n `powerOf` b | b > 1 && 0 <= n =
   n' == b' ^ logBaseInteger b' n'
@@ -66,9 +82,11 @@ n `powerOf` b | b > 1 && 0 <= n =
 _ `powerOf` _ | otherwise =
   error $ "Log base must be > 1 and number >= 0"
 
+-- | The integral logarithm of @n@ in base @b@
 logBaseInteger :: Integer -> Integer -> Integer
 logBaseInteger b n = smallInteger (integerLogBase# b n)
 
+-- | Slice every @n@ elements of a container
 sliceMultiplesOf :: Integral n => n -> Slicing b n
 sliceMultiplesOf n =
   Slicing { next  = const succ
@@ -76,6 +94,7 @@ sliceMultiplesOf n =
           , start = 0
           , done  = id }
 
+-- | Slice every time the cumulative size of the container so far is a power of @n@
 slicePowersOf :: Integral n => n -> Slicing b n
 slicePowersOf n =
   Slicing { next  = const succ
@@ -83,6 +102,9 @@ slicePowersOf n =
           , start = 0
           , done  = id }
 
+-- | Build a tree-like structure from the leaves up in a little-endian shape, such that
+-- if the structure has exactly a power of 2 number of leaves, it is a perfect shape, but
+-- if not, has a one-level-deep fringe. This is linear in time.
 almostPerfect :: forall t f n a b. (Foldable t, Integral n, Bits n)
               => (f b -> f b -> f b) -> (a -> f b) -> t a -> (f b, n)
 almostPerfect _    _    elems | null elems = error "almostPerfect: empty list"
@@ -102,16 +124,20 @@ almostPerfect node leaf elems | otherwise = (tree, sizeTotal)
     squish :: [f b] -> [f b]
     squish = map (\[x, y] -> node x y) . map snd . fst . allSlices (sliceMultiplesOf (2 :: Int))
 
+-- | Return the head of a list exactly when it is a singleton, and @Nothing@ otherwise
 singular :: [a] -> Maybe a
 singular [a] = Just a
 singular  _  = Nothing
 
+-- | Return a list of @Maybe a@ such that for each successive @True@ in @bs@, a successive
+-- element of @as@ is inserted (but @as@ are not depleted when elements of @bs@ are @False@).
 stutter :: [Bool] -> [a] -> [Maybe a]
-stutter (True  : bs) (a : as) = Just a  : stutter bs      as
-stutter (False : bs) (a : as) = Nothing : stutter bs (a : as)
+stutter (True  : bs) (a : as) = Just a  : stutter bs as
+stutter (False : bs)      as  = Nothing : stutter bs as
 stutter _ [] = []
-stutter [] _ = undefined
+stutter [] _ = []
 
+-- | Returns the number formed by snipping out the first @n@ bits of the input and reversing them
 reverseBits :: (Num n, Eq n, Bits a) => n -> a -> a
 reverseBits = go zeroBits
   where go r 0 _ = r
