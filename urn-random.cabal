@@ -47,6 +47,7 @@ library
                      , these ==0.7.*
                      , newtype-generics ==0.5.*
                      , containers ==0.5.*
+                     , ghc-prim ==0.5.*
 
   default-language:    Haskell2010
 

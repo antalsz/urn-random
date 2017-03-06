@@ -31,6 +31,7 @@ import qualified Data.Ord  as Ord
 import qualified Data.List as List
 import Data.List.NonEmpty (NonEmpty(..))
 import Data.Tree (Tree(..), drawTree)
+import Data.Foldable (toList)
 
 import Data.Urn.FoldSlice
 
@@ -157,11 +158,11 @@ replace wNew aNew = go where
                     (w', a', r') -> (w', a', WNode (w-w'+wNew) l r')
 
 construct :: NonEmpty (Weight, a) -> Urn a
-construct list =
-  let (tree, size) = almostPerfect joinTrees (uncurry WLeaf) list
-  in Urn size tree
+construct list = Urn (Size (fromIntegral size)) tree
   where
-    joinTrees :: WTree a -> WTree a -> WTree a
+    size = length list
+    tree = unsafeAlmostPerfectFromSize joinTrees (uncurry WLeaf) size (toList list)
+
     joinTrees x@(WLeaf v _)   y@(WLeaf w _)   = WNode (v + w) x y
     joinTrees x@(WNode v _ _) y@(WLeaf w _)   = WNode (v + w) x y
     joinTrees x@(WLeaf v _)   y@(WNode w _ _) = WNode (v + w) x y
