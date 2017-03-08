@@ -1,4 +1,4 @@
-{-# LANGUAGE LambdaCase, TemplateHaskell #-}
+{-# LANGUAGE LambdaCase, TemplateHaskellQuotes #-}
 
 module Data.Urn.QQ.ParseExp (
   -- * Parse a literal 'Urn'

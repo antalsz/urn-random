@@ -53,7 +53,7 @@ library
   other-extensions:    LambdaCase
                      , DefaultSignatures, GeneralizedNewtypeDeriving
                      , PatternSynonyms
-                     , TemplateHaskell
+                     , TemplateHaskellQuotes
 
   ghc-options:         -Wall -fno-warn-name-shadowing
                        -O2 -funbox-strict-fields
