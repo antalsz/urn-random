@@ -28,7 +28,7 @@ almostPerfect node leaf (W# size) (e0:|elements0) =
         = (# leaf x, elements', succ# index #)
 
       | otherwise
-        = error $ "almostPerfect: size was a lie; got input of length " ++
+        = error $ "almostPerfect: size mismatch: got input of length " ++
                   show (length (e0:|elements0)) ++
                   ", but expected size " ++ show (W# size)
 
