@@ -15,8 +15,8 @@ intLog2 (I# n) = I# (integerLog2# (smallInteger n))
 -- TODO: Make this more efficient
 reverseBits :: (Num n, Eq n, Bits a) => n -> a -> a
 reverseBits = go zeroBits
-  where go r 0 _ = r
-        go r n x =
+  where go !r !0 !_ = r
+        go !r !n !x =
           go (r `shiftL` 1 .|. bool zeroBits (bit 0) (testBit x 0))
              (n - 1)
              (x `shiftR` 1)
@@ -58,8 +58,8 @@ unsafePerfectFromDepth node depth = \case
     go :: Int -> [a] -> (a, [a])
     go 1 (x : y : rest) = (x `node` y, rest)
     go 1 [_]            = error "unsafePerfectFromDepth: imperfect list (must have a power-of-two length)"
-    go d xs = let (!l, xs')  = go (pred d) xs
-                  (!r, xs'') = go (pred d) xs'
+    go d xs = let (l, xs')  = go (pred d) xs
+                  (r, xs'') = go (pred d) xs'
               in (l `node` r, xs'')
 
 almostPerfect' :: (f b -> f b -> f b) -> (a -> f b) -> [a] -> f b
