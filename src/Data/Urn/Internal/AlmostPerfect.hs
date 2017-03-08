@@ -1,6 +1,6 @@
 {-# LANGUAGE MagicHash, UnboxedTuples #-}
 
-module Data.Urn.FoldSlice (almostPerfect, reverseBits#) where
+module Data.Urn.Internal.AlmostPerfect (almostPerfect, reverseBits#) where
 
 import GHC.Integer.Logarithms
 import GHC.Exts

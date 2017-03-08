@@ -29,7 +29,7 @@ library
                      , Data.Urn.MonadSample
                      , Data.Urn.QQ.ParseExp
                      , Data.Urn.Internal
-                     , Data.Urn.FoldSlice
+                     , Data.Urn.Internal.AlmostPerfect
 
   hs-source-dirs:      src
 
@@ -45,7 +45,7 @@ library
                      , transformers ==0.5.*
                      -- For 'showTree'
                      , containers ==0.5.*
-                     -- For 'intLog2'
+                     -- For 'intLog2#'
                      , integer-gmp ==1.0.0.*
 
   default-language:    Haskell2010

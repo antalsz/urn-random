@@ -23,7 +23,7 @@ module Data.Urn.Internal (
 
 import Data.Bits
 import Data.Foldable (toList)
-import Data.Urn.FoldSlice
+import Data.Urn.Internal.AlmostPerfect
 
 -- For the 'Show' instance
 import qualified Data.Ord  as Ord
