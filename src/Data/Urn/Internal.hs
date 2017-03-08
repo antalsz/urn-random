@@ -1,8 +1,5 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving, PatternSynonyms, TypeApplications #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving, PatternSynonyms #-}
 {-# OPTIONS_HADDOCK not-home #-}
-{-# OPTIONS_GHC -Wall -fno-warn-incomplete-patterns
-                      -fno-warn-name-shadowing
-                      -fno-warn-missing-pattern-synonym-signatures #-}
 
 module Data.Urn.Internal (
   -- * Types
@@ -55,6 +52,8 @@ data WTree a = WTree { weight :: !Weight
                      , btree  :: !(BTree a) }
              deriving (Eq, Ord, Show)
 
+pattern WLeaf :: Weight -> a -> WTree a
+pattern WNode :: Weight -> WTree a -> WTree a -> WTree a
 pattern WLeaf w a   = WTree { weight = w, btree = BLeaf a }
 pattern WNode w l r = WTree { weight = w, btree = BNode l r }
 
