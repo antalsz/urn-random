@@ -6,6 +6,8 @@ import Data.List.NonEmpty (NonEmpty(..))
 import GHC.Integer.Logarithms
 import GHC.Exts
 
+-- TODO: Consider moving back to boxed Words, adding a wordLog2 function
+
 -- | Create an "almost perfect" tree from a given list of a specified size.
 --   Invariants: specified size must match the actual length of the list,
 --   and list must be non-empty.
