@@ -6,17 +6,6 @@ import Data.List.NonEmpty (NonEmpty(..))
 import GHC.Integer.Logarithms
 import GHC.Exts
 
--- | Returns the number formed by snipping out the first @n@ bits of the input
--- and reversing them
--- TODO: Make this more efficient
-reverseBits# :: Word# -> Word# -> Word#
-reverseBits# = go 0##
-  where go r 0## _ = r
-        go r n   x =
-          go ((r <<.# 1#) `or#` (x `and#` 1##))
-             (pred# n)
-             (x >>.# 1#)
-
 -- | Create an "almost perfect" tree from a given list of a specified size.
 --   Invariants: specified size must match the actual length of the list,
 --   and list must be non-empty.
@@ -43,6 +32,17 @@ almostPerfect node leaf (W# size) (e0:|elements0) =
       let (# l, elements',  index'  #) = go (pred# depth) index  elements
           (# r, elements'', index'' #) = go (pred# depth) index' elements'
       in (# l `node` r, elements'', index'' #)
+
+-- | Returns the number formed by snipping out the first @n@ bits of the input
+-- and reversing them
+-- TODO: Make this more efficient
+reverseBits# :: Word# -> Word# -> Word#
+reverseBits# = go 0##
+  where go r 0## _ = r
+        go r n   x =
+          go ((r <<.# 1#) `or#` (x `and#` 1##))
+             (pred# n)
+             (x >>.# 1#)
 
 --------------------------------------------------------------------------------
 -- Functions on 'Word#' – used just to make 'almostPerfect' read nicely
