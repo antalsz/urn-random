@@ -1,67 +1,74 @@
-{-# LANGUAGE LambdaCase, MagicHash, ScopedTypeVariables, ViewPatterns, BangPatterns #-}
+{-# LANGUAGE MagicHash, UnboxedTuples #-}
 
-module Data.Urn.FoldSlice where
+module Data.Urn.FoldSlice (almostPerfect, reverseBits#) where
 
-import Data.Bool
-import Data.Bits
-import GHC.Integer
 import GHC.Integer.Logarithms
-import GHC.Exts ( Int(..) )
+import GHC.Exts
 
-intLog2 :: Int -> Int
-intLog2 (I# n) = I# (integerLog2# (smallInteger n))
-
--- | Returns the number formed by snipping out the first @n@ bits of the input and reversing them
+-- | Returns the number formed by snipping out the first @n@ bits of the input
+-- and reversing them
 -- TODO: Make this more efficient
-reverseBits :: (Num n, Eq n, Bits a) => n -> a -> a
-reverseBits = go zeroBits
-  where go !r !0 !_ = r
-        go !r !n !x =
-          go (r `shiftL` 1 .|. bool zeroBits (bit 0) (testBit x 0))
-             (n - 1)
-             (x `shiftR` 1)
+reverseBits# :: Word# -> Word# -> Word#
+reverseBits# = go 0##
+  where go r 0## _ = r
+        go r n   x =
+          go ((r <<.# 1#) `or#` (x `and#` 1##))
+             (pred# n)
+             (x >>.# 1#)
 
 -- | Create an "almost perfect" tree from a given list of a specified size.
 --   Invariants: specified size must match the actual length of the list,
 --   and list must be non-empty.
-unsafeAlmostPerfectFromSize :: (b -> b -> b) -> (a -> b) -> Int -> [a] -> b
-unsafeAlmostPerfectFromSize _    _    0    = error "unsafeAlmostPerfectFromSize: zero size"
-unsafeAlmostPerfectFromSize node leaf size =
-  unsafePerfectFromDepth node depthPerfect . perfectBottom
+almostPerfect :: (b -> b -> b) -> (a -> b) -> Word -> [a] -> b
+almostPerfect _    _    0         _        = error "magic: zero size"
+almostPerfect node leaf (W# size) elements =
+  case go perfectDepth 0## elements of (# tree, _, _ #) -> tree
   where
-    depthPerfect  = intLog2 size
-    sizePerfect   = 1 `shiftL` depthPerfect
-    sizeRemainder = size - sizePerfect
+    perfectDepthInt = wordLog2# size
+    perfectDepth    = int2Word# perfectDepthInt
+    remainder       = size -.# (1## <<.# perfectDepthInt)
+     
+    go 0## index elements
+      | reverseBits# perfectDepth index <.# remainder
+      , l:r:elements' <- elements
+        = (# leaf l `node` leaf r, elements', succ# index #)
+      
+      | x:elements' <- elements
+        = (# leaf x, elements', succ# index #)
+      
+      | otherwise
+        = error "magic: size was a lie"
+     
+    go depth index elements =
+      let (# l, elements',  index'  #) = go (pred# depth) index  elements
+          (# r, elements'', index'' #) = go (pred# depth) index' elements'
+      in (# l `node` r, elements'', index'' #)
 
-    perfectBottom = go 0
-      where
-        go !n | reverseBits depthPerfect n < sizeRemainder = \case
-          (x : y : rest) -> (leaf x `node` leaf y) : go (succ n) rest
-          []             -> []
-          _              -> error "unsafeAlmostPerfectFromSize: mismatch between stated and actual sizes"
-        go !n | otherwise = \case
-          (x : rest) -> leaf x : go (succ n) rest
-          []         -> []
+--------------------------------------------------------------------------------
+-- Functions on 'Word#' – used just to make 'almostPerfect' read nicely
 
--- | Create a perfect tree from a power-of-two sized list by combining elements.
---   Invariants: depth must be the floor of the log2 of the length of the list,
---   the list must be non-empty, and the list must be of a length which is some
---   power of two.
-unsafePerfectFromDepth :: forall a. (a -> a -> a) -> Int -> [a] -> a
-unsafePerfectFromDepth node depth = \case
-  [] -> error "unsafePerfectFromDepth: empty list"
-  [_] | depth /= 0 -> error "unsafePerfectFromDepth: non-zero depth given for singleton list"
-  [a] | otherwise  -> a
-  _   | depth <= 0 -> error "unsafePerfectFromDepth: invalid depth (must be log-base-two of list length)"
-  as  | otherwise -> fst $ go depth as
-  where
-    go :: Int -> [a] -> (a, [a])
-    go 1 (x : y : rest) = (x `node` y, rest)
-    go 1 [_]            = error "unsafePerfectFromDepth: imperfect list (must have a power-of-two length)"
-    go d xs = let (l, xs')  = go (pred d) xs
-                  (r, xs'') = go (pred d) xs'
-              in (l `node` r, xs'')
+(-.#) :: Word# -> Word# -> Word#
+m -.# n = case m `subWordC#` n of (# r, _ #) -> r
+{-# INLINE (-.#) #-}
 
-almostPerfect' :: (f b -> f b -> f b) -> (a -> f b) -> [a] -> f b
-almostPerfect' node leaf elements =
-  unsafeAlmostPerfectFromSize node leaf (length elements) elements
+succ# :: Word# -> Word#
+succ# x = x `plusWord#` 1##
+{-# INLINE succ# #-}
+
+pred# :: Word# -> Word#
+pred# x = x -.# 1##
+{-# INLINE pred# #-}
+
+(<<.#) :: Word# -> Int# -> Word#
+(<<.#) = uncheckedShiftL#
+{-# INLINE (<<.#) #-}
+
+(>>.#) :: Word# -> Int# -> Word#
+(>>.#) = uncheckedShiftRL#
+{-# INLINE (>>.#) #-}
+
+(<.#) :: Word# -> Word# -> Bool
+m <.# n = case m `ltWord#` n of
+           0# -> True
+           _  -> False
+{-# INLINE (<.#) #-}

@@ -155,12 +155,10 @@ replace wNew aNew = go where
                     (w', a', r') -> (w', a', WNode (w-w'+wNew) l r')
 
 construct :: NonEmpty (Weight, a) -> Urn a
-construct list = Urn (Size (fromIntegral size)) tree
+construct list = Urn (Size size) tree
   where
-    size = length list
-    tree = unsafeAlmostPerfectFromSize joinTrees (uncurry WLeaf) size (toList list)
-
-    joinTrees x@(WLeaf v _)   y@(WLeaf w _)   = WNode (v + w) x y
-    joinTrees x@(WNode v _ _) y@(WLeaf w _)   = WNode (v + w) x y
-    joinTrees x@(WLeaf v _)   y@(WNode w _ _) = WNode (v + w) x y
-    joinTrees x@(WNode v _ _) y@(WNode w _ _) = WNode (v + w) x y
+    size = fromIntegral $ length list
+    tree = almostPerfect (\l r -> WNode (weight l + weight r) l r)
+                         (uncurry WLeaf)
+                         size
+                         (toList list)
