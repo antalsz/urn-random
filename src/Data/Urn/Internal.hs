@@ -22,15 +22,14 @@ module Data.Urn.Internal (
 ) where
 
 import Data.Bits
+import Data.Foldable (toList)
+import Data.Urn.FoldSlice
 
 -- For the 'Show' instance
 import qualified Data.Ord  as Ord
 import qualified Data.List as List
 import Data.List.NonEmpty (NonEmpty(..))
 import Data.Tree (Tree(..), drawTree)
-import Data.Foldable (toList)
-
-import Data.Urn.FoldSlice
 
 ----------------------------------------
 
@@ -71,7 +70,6 @@ instance Show a => Show (Urn a) where
                     showString "fromList " . shows (toList [] $ wtree u) where
     toList acc (WLeaf w a)   = List.insertBy (flip $ Ord.comparing fst) (w,a) acc
     toList acc (WNode _ l r) = toList (toList acc l) r
-    toList _   _             = error "[pattern match checker bug]"
 
 -- TODO: A debugging equivalent of 'show' for the tree structure, like
 -- 'Data.Set.showTree'?
