@@ -16,18 +16,20 @@ almostPerfect node leaf (W# size) (e0:|elements0) =
     perfectDepthInt = wordLog2# size
     perfectDepth    = int2Word# perfectDepthInt
     remainder       = size -.# (1## <<.# perfectDepthInt)
-     
+
     go 0## index elements
       | reverseBits# perfectDepth index <.# remainder
       , l:r:elements' <- elements
         = (# leaf l `node` leaf r, elements', succ# index #)
-      
+
       | x:elements' <- elements
         = (# leaf x, elements', succ# index #)
-      
+
       | otherwise
-        = error "almostPerfect: size was a lie"
-     
+        = error $ "almostPerfect: size was a lie; got input of length " ++
+                  show (length (e0:|elements0)) ++
+                  ", but expected size " ++ show (W# size)
+
     go depth index elements =
       let (# l, elements',  index'  #) = go (pred# depth) index  elements
           (# r, elements'', index'' #) = go (pred# depth) index' elements'
@@ -69,6 +71,6 @@ pred# x = x -.# 1##
 
 (<.#) :: Word# -> Word# -> Bool
 m <.# n = case m `ltWord#` n of
-           0# -> True
-           _  -> False
+           0# -> False
+           _  -> True
 {-# INLINE (<.#) #-}

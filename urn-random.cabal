@@ -33,9 +33,7 @@ library
 
   hs-source-dirs:      src
 
-  build-depends:       base >=4.8 && <5
-                     -- Only for 'fromNonEmpty'
-                     , semigroups >=0.5 && <0.19
+  build-depends:       base ==4.9.*
                      -- For the quasi-quoter
                      , template-haskell ==2.11.*
                      , haskell-src-meta ==0.6.*
