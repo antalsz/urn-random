@@ -2,6 +2,7 @@
 
 module Data.Urn.Internal.AlmostPerfect (almostPerfect, reverseBits#) where
 
+import Data.List.NonEmpty (NonEmpty(..))
 import GHC.Integer.Logarithms
 import GHC.Exts
 
@@ -19,10 +20,9 @@ reverseBits# = go 0##
 -- | Create an "almost perfect" tree from a given list of a specified size.
 --   Invariants: specified size must match the actual length of the list,
 --   and list must be non-empty.
-almostPerfect :: (b -> b -> b) -> (a -> b) -> Word -> [a] -> b
-almostPerfect _    _    0         _        = error "magic: zero size"
-almostPerfect node leaf (W# size) elements =
-  case go perfectDepth 0## elements of (# tree, _, _ #) -> tree
+almostPerfect :: (b -> b -> b) -> (a -> b) -> Word -> NonEmpty a -> b
+almostPerfect node leaf (W# size) (e0:|elements0) =
+  case go perfectDepth 0## (e0:elements0) of (# tree, _, _ #) -> tree
   where
     perfectDepthInt = wordLog2# size
     perfectDepth    = int2Word# perfectDepthInt
@@ -37,7 +37,7 @@ almostPerfect node leaf (W# size) elements =
         = (# leaf x, elements', succ# index #)
       
       | otherwise
-        = error "magic: size was a lie"
+        = error "almostPerfect: size was a lie"
      
     go depth index elements =
       let (# l, elements',  index'  #) = go (pred# depth) index  elements

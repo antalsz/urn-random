@@ -22,7 +22,6 @@ module Data.Urn.Internal (
 ) where
 
 import Data.Bits
-import Data.Foldable (toList)
 import Data.Urn.Internal.AlmostPerfect
 
 -- For the 'Show' instance
@@ -161,4 +160,4 @@ construct list = Urn (Size size) tree
     tree = almostPerfect (\l r -> WNode (weight l + weight r) l r)
                          (uncurry WLeaf)
                          size
-                         (toList list)
+                         list
