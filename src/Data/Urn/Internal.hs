@@ -1,4 +1,5 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving, PatternSynonyms #-}
+{-# OPTIONS_GHC -fno-warn-incomplete-patterns #-}
 {-# OPTIONS_HADDOCK not-home #-}
 
 module Data.Urn.Internal (
