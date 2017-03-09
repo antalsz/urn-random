@@ -72,5 +72,13 @@ pred# x = x -.# 1##
 {-# INLINE (>>.#) #-}
 
 (<.#) :: Word# -> Word# -> Bool
-m <.# n = isTrue# (m `ltWord#` n)
+m <.# n = case m `ltWord#` n of
+            0# -> False
+            _  -> True
 {-# INLINE (<.#) #-}
+-- NB: There's an `isTrue#` function, but we may not want to use it; using the
+-- direct case generates more efficient core, but if we branch on the result,
+-- "the code generator will generate very bad Cmm if [the results of the
+-- conditional branch] do allocation."  See Note [Optimizing isTrue#] in
+-- "GHC.Types".  And no, we'll never actually be able to see the speed
+-- difference, this is purely about doing the Right Thing™ :-)
