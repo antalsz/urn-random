@@ -41,8 +41,6 @@ library
                      , MonadRandom  ==0.4.*
                      , QuickCheck   ==2.8.*
                      , transformers ==0.5.*
-                     -- For 'showTree'
-                     , containers ==0.5.*
                      -- For 'intLog2#'
                      , integer-gmp ==1.0.0.*
 

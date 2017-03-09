@@ -19,17 +19,17 @@ module Data.Urn.Internal (
   -- * Raw random index generation
   randomIndexWith,
   -- * Debugging
-  showTree
+  showUrnTreeStructureWith,
+  showUrnTreeStructure
 ) where
 
 import Data.Bits
 import Data.Urn.Internal.AlmostPerfect
+import Data.List.NonEmpty (NonEmpty(..))
 
 -- For the 'Show' instance
 import qualified Data.Ord  as Ord
 import qualified Data.List as List
-import Data.List.NonEmpty (NonEmpty(..))
-import Data.Tree (Tree(..), drawTree)
 
 ----------------------------------------
 
@@ -71,15 +71,23 @@ instance Show a => Show (Urn a) where
     toList acc (WLeaf w a)   = List.insertBy (flip $ Ord.comparing fst) (w,a) acc
     toList acc (WNode _ l r) = toList (toList acc l) r
 
--- TODO: A debugging equivalent of 'show' for the tree structure, like
--- 'Data.Set.showTree'?
-
-showTree :: Show a => Urn a -> String
-showTree (Urn s t)=
-  "(" ++ show (getSize s) ++ ")\n" ++ drawTree (stringTree t)
+showUrnTreeStructureWith :: (a -> String) -> Urn a -> String
+showUrnTreeStructureWith disp (Urn (Size size) wtree) =
+  unlines $ ("Urn, size " ++ show size ++ ":") : strings wtree
   where
-    stringTree (WLeaf w a)   = Node (show (w, a)) []
-    stringTree (WNode w l r) = Node (show w) [stringTree l, stringTree r]
+    strings (WLeaf w a)   = ["(" ++ show w ++ ": " ++ disp a ++ ")"]
+    strings (WNode w l r) = ("[" ++ show w ++ "]") :
+                            " |" :
+                            nest '+' '|' (strings l) ++
+                            " |" :
+                            nest '`' ' ' (strings r)
+
+    nest cc gc (child:grandchildren) =
+      ([' ',cc,'-'] ++ child) : map ([' ', gc, ' '] ++) grandchildren
+    nest _ _ [] = []
+
+showUrnTreeStructure :: Show a => Urn a -> String
+showUrnTreeStructure = showUrnTreeStructureWith show
 
 ----------------------------------------
 
