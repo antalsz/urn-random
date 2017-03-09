@@ -72,7 +72,5 @@ pred# x = x -.# 1##
 {-# INLINE (>>.#) #-}
 
 (<.#) :: Word# -> Word# -> Bool
-m <.# n = case m `ltWord#` n of
-           0# -> False
-           _  -> True
+m <.# n = isTrue# (m `ltWord#` n)
 {-# INLINE (<.#) #-}
