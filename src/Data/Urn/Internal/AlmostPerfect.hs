@@ -51,10 +51,6 @@ reverseBits# = go 0##
 --------------------------------------------------------------------------------
 -- Functions on 'Word#' – used just to make 'almostPerfect' read nicely
 
-(-.#) :: Word# -> Word# -> Word#
-m -.# n = case m `subWordC#` n of (# r, _ #) -> r
-{-# INLINE (-.#) #-}
-
 succ# :: Word# -> Word#
 succ# x = x `plusWord#` 1##
 {-# INLINE succ# #-}
@@ -62,6 +58,10 @@ succ# x = x `plusWord#` 1##
 pred# :: Word# -> Word#
 pred# x = x -.# 1##
 {-# INLINE pred# #-}
+
+(-.#) :: Word# -> Word# -> Word#
+(-.#) = minusWord#
+{-# INLINE (-.#) #-}
 
 (<<.#) :: Word# -> Int# -> Word#
 (<<.#) = uncheckedShiftL#
