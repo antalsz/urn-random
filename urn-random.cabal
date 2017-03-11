@@ -34,6 +34,8 @@ library
   hs-source-dirs:      src
 
   build-depends:       base ==4.9.*
+                     -- 'NFData' instances
+                     , deepseq ==1.4.*
                      -- For the quasi-quoter
                      , template-haskell ==2.11.*
                      , haskell-src-meta ==0.6.*

@@ -27,6 +27,9 @@ import Data.Bits
 import Data.Urn.Internal.AlmostPerfect
 import Data.List.NonEmpty (NonEmpty(..))
 
+-- For 'NFData' instances
+import Control.DeepSeq
+
 -- For the 'Show' instance
 import qualified Data.Ord  as Ord
 import qualified Data.List as List
@@ -35,13 +38,14 @@ import qualified Data.List as List
 
 type Weight = Word
 
-newtype Index = Index { getIndex :: Word } deriving (Eq, Ord)
+newtype Index = Index { getIndex :: Word } deriving (Eq, Ord, NFData)
 -- This type is opaque, so there's no 'Show' instance.
 
 newtype Size = Size { getSize :: Word }
              deriving ( Eq, Ord, Show, Bounded, Enum
                       , Num, Real, Integral
-                      , Bits, FiniteBits )
+                      , Bits, FiniteBits
+                      , NFData )
 
 data BTree a = BLeaf a
              | BNode !(WTree a) !(WTree a)
@@ -61,6 +65,16 @@ data Urn a = Urn { size  :: !Size
 -- TODO: 'Eq' and 'Ord' instances?  We can provide an O(n²) 'Eq' instance, and
 -- an O(n log n) 'Ord' instance; the 'Eq' instance goes down to O(n log n) if
 -- we're willing to require an 'Ord' constraint.
+
+instance NFData a => NFData (BTree a) where
+  rnf (BLeaf a)   = rnf a
+  rnf (BNode l r) = rnf l `seq` rnf r
+
+instance NFData a => NFData (WTree a) where
+  rnf (WTree w t) = rnf w `seq` rnf t
+
+instance NFData a => NFData (Urn a) where
+  rnf (Urn size wt) = rnf size `seq` rnf wt
 
 -- |This 'Show' instance prints out the elements from most-weighted to
 -- least-weighted; however, do not rely on the order of equally-weighted
