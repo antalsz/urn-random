@@ -10,7 +10,6 @@ import Data.Bits
 --------------------------------------------------------------------------------
 -- TODO: make this code efficient
 import Control.Monad.State.Strict
-import Control.Arrow
 
 newtype Consume n s a =
   Consume { getConsume :: State (n, [s]) a }
@@ -24,20 +23,20 @@ index = Consume $ fst <$> get
 
 consume :: Integral n => Int -> Consume n s [s]
 consume n = Consume $ do
-  (ix,tokens) <- get
-  let (consumed,remaining) = splitAt n ss
-  consumed <$ put (ix+1, remaining)
+  (ix, tokens) <- get
+  let (consumed, remaining) = splitAt n tokens
+  consumed <$ put (ix + 1, remaining)
 
 almostPerfect' :: (b -> b -> b) -> (a -> b) -> Word -> NonEmpty a -> b
 almostPerfect' node leaf size (e0:|elements0) =
   runConsume (go perfectDepth) (e0:elements0)
   where
     perfectDepth  = wordLog2 size
-    remainderSize = size - (1 `shiftL` fromIntegral perfectDepth)
+    remainderSize = size - (2 ^ perfectDepth)
 
     go 0 = do
-      i <- index
-      if reverseBits perfectDepth i < remainderSize
+      ix <- index
+      if reverseBits perfectDepth ix < remainderSize
         then do [l,r] <- consume 2
                 pure $ leaf l `node` leaf r
         else do [x]   <- consume 1
