@@ -1,63 +1,52 @@
-{-# LANGUAGE MagicHash, UnboxedTuples #-}
+{-# LANGUAGE MagicHash, UnboxedTuples, CPP #-}
 
-module Data.Urn.Internal.AlmostPerfect (almostPerfect, reverseBits#) where
+module Data.Urn.Internal.AlmostPerfect (almostPerfect) where
 
 import Data.List.NonEmpty (NonEmpty(..))
-import GHC.Integer.Logarithms
 import GHC.Exts
+#include "MachDeps.h"
 
--- TODO: Consider moving back to boxed Words, adding a wordLog2 function
+-- TODO: Consider moving back to boxed Words
 
 -- | Create an "almost perfect" tree from a given list of a specified size.
 --   Invariants: specified size must match the actual length of the list,
 --   and list must be non-empty.
 almostPerfect :: (b -> b -> b) -> (a -> b) -> Word -> NonEmpty a -> b
 almostPerfect node leaf (W# size) (e0:|elements0) =
-  case go perfectDepth 0## (e0:elements0) of (# tree, _, _ #) -> tree
+  case go perfectDepth 0## (e0:elements0) of (# tree, _ #) -> tree
   where
-    perfectDepthInt = wordLog2# size
-    perfectDepth    = int2Word# perfectDepthInt
-    remainder       = size -.# (1## <<.# perfectDepthInt)
+    perfectDepth = {- ⌊lg size⌋ -}
+                   word2Int# ((WORD_SIZE_IN_BITS## -.# 1##) -.# clz# size)
 
-    go 0## index elements
-      | reverseBits# perfectDepth index <.# remainder
+    pathLimit    = {- size - 2^perfectDepth -}
+                   (size -.# (1## <<.# perfectDepth))
+                     {- … left-shifted to the top of the word -}
+                     <<.# (WORD_SIZE_IN_BITS# -# perfectDepth)
+
+    highBit      = {- 0b10…0 -}
+                   1## <<.# (WORD_SIZE_IN_BITS# -# 1#)
+
+    go 0# path elements
+      | path <.# pathLimit
       , l:r:elements' <- elements
-        = (# leaf l `node` leaf r, elements', succ# index #)
+        = (# leaf l `node` leaf r, elements' #)
 
       | x:elements' <- elements
-        = (# leaf x, elements', succ# index #)
+        = (# leaf x, elements' #)
 
       | otherwise
         = error $ "almostPerfect: size mismatch: got input of length " ++
                   show (length (e0:|elements0)) ++
                   ", but expected size " ++ show (W# size)
 
-    go depth index elements =
-      let (# l, elements',  index'  #) = go (pred# depth) index  elements
-          (# r, elements'', index'' #) = go (pred# depth) index' elements'
-      in (# l `node` r, elements'', index'' #)
-
--- | Returns the number formed by snipping out the first @n@ bits of the input
--- and reversing them
--- TODO: Make this more efficient
-reverseBits# :: Word# -> Word# -> Word#
-reverseBits# = go 0##
-  where go r 0## _ = r
-        go r n   x =
-          go ((r <<.# 1#) `or#` (x `and#` 1##))
-             (pred# n)
-             (x >>.# 1#)
+    go depth path elements =
+      let path' = path >>.# 1#
+          (# l, elements'  #) = go (depth -# 1#) path'                 elements
+          (# r, elements'' #) = go (depth -# 1#) (path' `or#` highBit) elements'
+      in (# l `node` r, elements'' #)
 
 --------------------------------------------------------------------------------
--- Functions on 'Word#' – used just to make 'almostPerfect' read nicely
-
-succ# :: Word# -> Word#
-succ# x = x `plusWord#` 1##
-{-# INLINE succ# #-}
-
-pred# :: Word# -> Word#
-pred# x = x -.# 1##
-{-# INLINE pred# #-}
+-- Functions on 'Word#' – used just to make 'almostPerfect' read more nicely
 
 (-.#) :: Word# -> Word# -> Word#
 (-.#) = minusWord#
