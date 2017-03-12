@@ -12,8 +12,8 @@ import GHC.Exts
 --   Invariants: specified size must match the actual length of the list,
 --   and list must be non-empty.
 almostPerfect :: (b -> b -> b) -> (a -> b) -> Word -> NonEmpty a -> b
-almostPerfect node leaf (W# size) (e0:|elements0) =
-  case go perfectDepth 0## (e0:elements0) of (# tree, _ #) -> tree
+almostPerfect node leaf (W# size) (v0:|values0) =
+  case go perfectDepth 0## (v0:values0) of (# tree, _ #) -> tree
   where
     perfectDepth = {- ⌊lg size⌋ -}
                    word2Int# ((WORD_SIZE_IN_BITS## -.# 1##) -.# clz# size)
@@ -26,24 +26,24 @@ almostPerfect node leaf (W# size) (e0:|elements0) =
     highBit      = {- 0b10…0 -}
                    1## <<.# (WORD_SIZE_IN_BITS# -# 1#)
 
-    go 0# path elements
+    go 0# path values
       | path <.# pathLimit
-      , l:r:elements' <- elements
-        = (# leaf l `node` leaf r, elements' #)
+      , l:r:values' <- values
+        = (# leaf l `node` leaf r, values' #)
 
-      | x:elements' <- elements
-        = (# leaf x, elements' #)
+      | x:values' <- values
+        = (# leaf x, values' #)
 
       | otherwise
         = error $ "almostPerfect: size mismatch: got input of length " ++
-                  show (length (e0:|elements0)) ++
+                  show (length (v0:|values0)) ++
                   ", but expected size " ++ show (W# size)
 
-    go depth path elements =
+    go depth path values =
       let path' = path >>.# 1#
-          (# l, elements'  #) = go (depth -# 1#) path'                 elements
-          (# r, elements'' #) = go (depth -# 1#) (path' `or#` highBit) elements'
-      in (# l `node` r, elements'' #)
+          (# l, values'  #) = go (depth -# 1#) path'                 values
+          (# r, values'' #) = go (depth -# 1#) (path' `or#` highBit) values'
+      in (# l `node` r, values'' #)
 
 --------------------------------------------------------------------------------
 -- Functions on 'Word#' – used just to make 'almostPerfect' read more nicely
