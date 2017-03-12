@@ -41,6 +41,8 @@ library
                      , MonadRandom  ==0.4.*
                      , QuickCheck   ==2.8.*
                      , transformers ==0.5.*
+                     -- For an experiment
+                     , mtl          ==2.2.*
                      -- For 'showTree'
                      , containers ==0.5.*
                      -- For 'intLog2#'
