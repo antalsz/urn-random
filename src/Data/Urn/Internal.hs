@@ -106,7 +106,7 @@ showUrnTreeStructure = showUrnTreeStructureWith show
 ----------------------------------------
 
 randomIndexWith :: Functor f => ((Word,Word) -> f Word) -> Urn a -> f Index
-randomIndexWith rand u  = Index <$> rand (0, getSize (size u) - 1)
+randomIndexWith rand u  = Index <$> rand (0, weight (wtree u) - 1)
 {-# INLINABLE randomIndexWith #-}
 
 ----------------------------------------
