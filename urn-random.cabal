@@ -2,19 +2,25 @@
 -- documentation, see http://haskell.org/cabal/users-guide/
 
 name:                urn-random
-version:             0.0.1
+version:             0.1.0.0
 synopsis:            A package for updatable discrete distributions
--- description:
 homepage:            https://github.com/antalsz/urn-random
 license:             MIT
 license-file:        LICENSE
 author:              Leonidas Lampropoulos, Antal Spector-Zabusky, Kenneth Foner
 maintainer:          Antal Spector-Zabusky <antal.b.sz@gmail.com>
-copyright:           Copyright (c) 2016 Leonidas Lampropoulos, Antal Spector-Zabusky, and Kenneth Foner
+copyright:           Copyright © 2016–2017 Leonidas Lampropoulos, Antal Spector-Zabusky, and Kenneth Foner
 category:            Data
 build-type:          Simple
-extra-source-files:  README.md
+extra-source-files:  README.md, stack.yaml
 cabal-version:       >=1.10
+
+description:
+  This package implements /urns/, which are a simple tree-based data structure
+  that supports sampling from and updating discrete probability distributions in
+  logarithmic time.  The details are presented in the paper “Ode on a Random Urn
+  (Functional Pearl)”, by Leonidas Lampropoulos, Antal Spector-Zabusky, and
+  Kenneth Foner, published in Haskell Symposium ’17.
 
 source-repository head
   type:     git
