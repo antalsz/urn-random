@@ -6,7 +6,6 @@ import Control.Monad.Random
 import Test.QuickCheck
 
 -- Transformers
-import           Control.Monad.Trans.Class
 import           Control.Monad.Trans.Identity
 import           Control.Monad.Trans.Reader
 import qualified Control.Monad.Trans.Writer.Strict as Strict

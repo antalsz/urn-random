@@ -39,18 +39,18 @@ library
 
   hs-source-dirs:      src
 
-  build-depends:       base ==4.9.*
+  build-depends:       base >=4.9
                      -- 'NFData' instances
-                     , deepseq ==1.4.*
+                     , deepseq >=1.4
                      -- For the quasi-quoter
-                     , template-haskell ==2.11.*
-                     , haskell-src-meta ==0.6.*
+                     , template-haskell >=2.11
+                     , haskell-src-meta >=0.6
                      -- For 'MonadSample' instances
-                     , MonadRandom  ==0.4.*
-                     , QuickCheck   ==2.8.*
-                     , transformers ==0.5.*
+                     , MonadRandom  >=0.4
+                     , QuickCheck   >=2.8
+                     , transformers >=0.5
                      -- For 'intLog2#'
-                     , integer-gmp ==1.0.0.*
+                     , integer-gmp >=1.0.0
 
   default-language:    Haskell2010
 
