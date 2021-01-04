@@ -2,7 +2,7 @@
 -- documentation, see http://haskell.org/cabal/users-guide/
 
 name:                urn-random
-version:             0.1.0.0
+version:             0.1.0.1
 synopsis:            A package for updatable discrete distributions
 homepage:            https://github.com/antalsz/urn-random
 license:             MIT

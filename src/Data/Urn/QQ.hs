@@ -10,5 +10,5 @@ urn = QuasiQuoter { quoteExp  = either fail (pure . urnExp) . parseUrn
                   , quotePat  = unsupported "patterns"
                   , quoteType = unsupported "types"
                   , quoteDec  = unsupported "declarations" }
-  where unsupported what =
+  where unsupported what _ =
           fail $ "Literal urns are only supported in expressions, not " ++ what

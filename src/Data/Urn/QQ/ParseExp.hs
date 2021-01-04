@@ -25,8 +25,8 @@ parseUrnList str =
       Left "Parse error in urn"
     Right (ListE tups) ->
       for tups $ \case
-        TupE [LitE (IntegerL w), e] | toInteger (minBound :: Word) <= w
-                                    , w <= toInteger (maxBound :: Word) ->
+        TupE [Just (LitE (IntegerL w)), Just e]
+          | toInteger (minBound :: Word) <= w, w <= toInteger (maxBound :: Word) ->
           Right (fromInteger w :: Word, e)
         TupE [_, _] ->
           Left $ "A weighted pair in this urn lacked a valid literal weight"

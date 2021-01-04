@@ -1,4 +1,4 @@
-{-# LANGUAGE MagicHash, UnboxedTuples #-}
+{-# LANGUAGE BangPatterns, MagicHash, UnboxedTuples #-}
 
 module Data.Urn.Internal.AlmostPerfect (almostPerfect, reverseBits#) where
 
@@ -33,8 +33,8 @@ almostPerfect node leaf (W# size) (e0:|elements0) =
                   ", but expected size " ++ show (W# size)
 
     go depth index elements =
-      let (# l, elements',  index'  #) = go (pred# depth) index  elements
-          (# r, elements'', index'' #) = go (pred# depth) index' elements'
+      let !(# l, elements',  index'  #) = go (pred# depth) index  elements
+          !(# r, elements'', index'' #) = go (pred# depth) index' elements'
       in (# l `node` r, elements'', index'' #)
 
 -- | Returns the number formed by snipping out the first @n@ bits of the input
